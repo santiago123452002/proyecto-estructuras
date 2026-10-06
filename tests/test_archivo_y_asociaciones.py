@@ -48,7 +48,7 @@ def test_eliminacion_individual_retira_solo_ese_evento():
     assert len(catalogo) == 6
     assert catalogo.esta_activo(104) is False
     assert catalogo.esta_eliminado(104) is True
-    # los demás siguen activos
+    # the others stay active
     for i in [101, 102, 103, 105, 106, 107]:
         evento, _ = catalogo.consultar_evento(i)
         assert evento is not None
@@ -73,7 +73,7 @@ def test_eliminar_identificador_inexistente():
 
 def test_archivar_rama_sin_ramas_elegibles_no_modifica_nada():
     catalogo = Catalogo()
-    # eventos de alta prioridad y recientes: ninguno es elegible
+    # high-priority and recent events: none is eligible
     _alta(catalogo, 300, 6.5, datetime(2026, 9, 10, 11, 0, 0))
     _alta(catalogo, 301, 6.2, datetime(2026, 9, 10, 11, 30, 0))
 
@@ -93,7 +93,7 @@ def test_archivar_rama_encuentra_la_mayor_subrama_elegible():
     instead of manually assuming the shape of the tree.
     """
     catalogo = Catalogo()
-    fecha_antigua = datetime(2026, 9, 1, 9, 0, 0)  # antigüedad > 72h por defecto
+    fecha_antigua = datetime(2026, 9, 1, 9, 0, 0)  # age > 72h by default
 
     # five low-priority (magnitude < 4.5) and old events
     for i in range(1, 6):
@@ -109,14 +109,14 @@ def test_archivar_rama_encuentra_la_mayor_subrama_elegible():
         return evento.prioridad == 1 and antiguedad_horas > catalogo.t_horas
 
     esperado = catalogo.avl.subarboles_elegibles(es_elegible)
-    assert esperado  # debe haber al menos una rama elegible
+    assert esperado  # there must be at least one eligible branch
     mejor_esperado = max(esperado, key=lambda c: (c[1], c[2], c[0].elemento.identificador))
     ids_esperados = sorted(e.identificador for e in Catalogo._eventos_del_subarbol(mejor_esperado[0]))
 
     resultado = catalogo.archivar_rama_antigua(RELOJ)
 
     assert sorted(resultado) == ids_esperados
-    assert 500 not in resultado  # el evento de prioridad alta nunca se archiva
+    assert 500 not in resultado  # the high-priority event is never archived
     assert len(catalogo) == 6 - len(ids_esperados)
     for identificador in ids_esperados:
         assert catalogo.esta_archivado(identificador)
@@ -138,9 +138,9 @@ def test_rama_con_raiz_de_baja_prioridad_no_es_elegible_si_contiene_uno_de_mayor
     """
     catalogo = Catalogo()
     fecha_antigua = datetime(2026, 9, 1, 9, 0, 0)
-    _alta(catalogo, 700, 1.0, fecha_antigua)   # prioridad baja, antiguo -> quedará como hijo aislado
-    _alta(catalogo, 701, 3.0, fecha_antigua)   # prioridad baja, antiguo -> quedará como raíz
-    _alta(catalogo, 702, 6.0, fecha_antigua)   # prioridad alta, antiguo también -> invalida a la raíz
+    _alta(catalogo, 700, 1.0, fecha_antigua)   # low priority, old -> it will end up as an isolated child
+    _alta(catalogo, 701, 3.0, fecha_antigua)   # low priority, old -> it will end up as the root
+    _alta(catalogo, 702, 6.0, fecha_antigua)   # high priority, also old -> it invalidates the root
 
     def es_elegible(evento):
         antiguedad_horas = (RELOJ - evento.fecha_hora).total_seconds() / 3600.0
@@ -150,10 +150,10 @@ def test_rama_con_raiz_de_baja_prioridad_no_es_elegible_si_contiene_uno_de_mayor
     ids_por_subarbol = [sorted(e.identificador for e in Catalogo._eventos_del_subarbol(c[0]))
                          for c in candidatas]
 
-    assert [700, 701, 702] not in ids_por_subarbol  # el árbol completo nunca es elegible
-    assert [700] in ids_por_subarbol                 # pero el hijo de baja prioridad, aislado, sí
-    assert [701] not in ids_por_subarbol             # la raíz sola nunca aparece: su subárbol real
-    assert [702] not in ids_por_subarbol             # incluye a 702, y 702 no es de prioridad baja
+    assert [700, 701, 702] not in ids_por_subarbol  # the whole tree is never eligible
+    assert [700] in ids_por_subarbol                 # but the isolated low-priority child is
+    assert [701] not in ids_por_subarbol             # the root alone never appears: its real subtree
+    assert [702] not in ids_por_subarbol             # includes 702, and 702 is not low priority
 
 
 def test_archivar_conserva_datos_en_el_historico():
@@ -166,7 +166,7 @@ def test_archivar_conserva_datos_en_el_historico():
     assert catalogo.esta_archivado(700)
     assert catalogo.esta_activo(700) is False
     evento, _ = catalogo.consultar_evento(700)
-    assert evento is None  # consultar_evento solo mira activos
+    assert evento is None  # consultar_evento only looks at active events
 
 
 # ---------------- candidate/replica associations ----------------
@@ -184,12 +184,12 @@ def test_es_candidato_exige_mayor_magnitud_y_ocurrir_antes():
 def test_es_candidato_respeta_limites_de_w_y_r():
     a = Evento(1, 6.0, 10.0, 0.0, 0.0, datetime(2026, 9, 7, 9, 0, 0), "EST-01")
     a.actualizar_prioridad(False)
-    b = Evento(2, 5.0, 10.0, 100.0, 0.0, datetime(2026, 9, 10, 9, 0, 0), "EST-01")  # 3 días después, 100 km
+    b = Evento(2, 5.0, 10.0, 100.0, 0.0, datetime(2026, 9, 10, 9, 0, 0), "EST-01")  # 3 days later, 100 km
     b.actualizar_prioridad(False)
 
-    assert es_candidato(a, b, w_horas=48, r_km=200) is False  # excede W (72h > 48h)
-    assert es_candidato(a, b, w_horas=100, r_km=40) is False  # excede R (100km > 40km)
-    assert es_candidato(a, b, w_horas=100, r_km=200) is True  # dentro de ambos límites
+    assert es_candidato(a, b, w_horas=48, r_km=200) is False  # exceeds W (72h > 48h)
+    assert es_candidato(a, b, w_horas=100, r_km=40) is False  # exceeds R (100km > 40km)
+    assert es_candidato(a, b, w_horas=100, r_km=200) is True  # within both limits
 
 
 def test_elegir_referencia_desempata_por_magnitud_luego_tiempo_luego_distancia_luego_id():
@@ -246,7 +246,7 @@ def test_eliminar_evento_de_referencia_actualiza_las_asociaciones_afectadas():
 
     catalogo.eliminar_evento(900)
 
-    assert catalogo.referencia_de(901) is None  # 900 ya no existe como candidato
+    assert catalogo.referencia_de(901) is None  # 900 no longer exists as a candidate
 
 
 def test_configurar_asociaciones_valida_valores_positivos():
@@ -260,7 +260,7 @@ def test_configurar_asociaciones_valida_valores_positivos():
 def test_cambiar_r_reduce_candidatos_y_actualiza_asociaciones():
     catalogo = Catalogo()
     _alta(catalogo, 1000, 6.0, datetime(2026, 9, 10, 9, 0, 0), x=0.0, y=0.0)
-    _alta(catalogo, 1001, 5.0, datetime(2026, 9, 10, 9, 30, 0), x=30.0, y=0.0)  # 30 km de distancia
+    _alta(catalogo, 1001, 5.0, datetime(2026, 9, 10, 9, 30, 0), x=30.0, y=0.0)  # 30 km away
 
     assert catalogo.referencia_de(1001) == 1000  # within the default R=40
     catalogo.configurar_asociaciones(r_km=10.0)  # now 30 km > 10 km

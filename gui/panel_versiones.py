@@ -5,13 +5,12 @@ from core import ValidacionError
 
 class PanelVersiones(QtWidgets.QWidget):
     """
-    La pila de deshacer (sección 13) ya tiene su botón en la barra
-    superior, visible desde cualquier pestaña; aquí se ve además cuántas
-    acciones hay pendientes por deshacer. El resto de este panel son las
-    versiones nombradas persistentes: guardarlas, listarlas y
-    restaurarlas -- independientes de la pila de deshacer, pero
-    restaurar una versión es, en sí misma, una acción que se puede
-    deshacer.
+    The undo stack (section 13) already has its button on the top bar,
+    visible from any tab; here you can also see how many actions are
+    still pending to undo. The rest of this panel is the persistent
+    named versions: saving them, listing them, and restoring them --
+    independent of the undo stack, but restoring a version is itself
+    an action that can be undone.
     """
 
     cambio_realizado = QtCore.Signal()
@@ -61,7 +60,7 @@ class PanelVersiones(QtWidgets.QWidget):
 
         self.refrescar()
 
-    # ---------------- refresco ----------------
+    # ---------------- refresh ----------------
 
     def refrescar(self):
         cantidad = len(self.escenario._pila_deshacer)
@@ -84,7 +83,7 @@ class PanelVersiones(QtWidgets.QWidget):
             if coincidencias:
                 self.lista_versiones.setCurrentItem(coincidencias[0])
 
-    # ---------------- acciones ----------------
+    # ---------------- actions ----------------
 
     def _deshacer(self):
         if not self.escenario.deshacer():

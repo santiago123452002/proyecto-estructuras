@@ -5,11 +5,11 @@ from core import ValidacionError
 
 class PanelPersistencia(QtWidgets.QWidget):
     """
-    Persistencia en JSON (sección 12): guardado estructural completo, y
-    los dos modos de carga (por topología y por inserciones). Todo pasa
-    por Escenario, que ya se ocupa de leer el archivo, validar todo, y
-    conservar el escenario anterior si la carga falla -- esta clase solo
-    abre los diálogos de archivo y muestra el resultado.
+    JSON persistence (section 12): complete structural save, and the two
+    load modes (by topology and by insertions). Everything goes through
+    Escenario, which already reads the file, validates everything, and
+    keeps the previous scenario if the load fails -- this class only
+    opens the file dialogs and shows the result.
     """
 
     cambio_realizado = QtCore.Signal()
@@ -68,12 +68,12 @@ class PanelPersistencia(QtWidgets.QWidget):
         layout.addStretch()
 
     def refrescar(self):
-        """Este panel no muestra ningún estado que cambie por acciones
-        de otras pestañas (solo botones y el último resultado de
-        comparación); existe por uniformidad con el resto de paneles."""
+        """This panel does not display any state that changes because of
+        actions on other tabs (only buttons and the last comparison
+        result); it exists for uniformity with the other panels."""
         pass
 
-    # ---------------- guardar ----------------
+    # ---------------- save ----------------
 
     def _guardar(self):
         ruta, _ = QtWidgets.QFileDialog.getSaveFileName(
@@ -88,7 +88,7 @@ class PanelPersistencia(QtWidgets.QWidget):
             return
         QtWidgets.QMessageBox.information(self, "Guardado", f"Escenario guardado en:\n{ruta}")
 
-    # ---------------- carga por topología ----------------
+    # ---------------- topology loading ----------------
 
     def _cargar_por_topologia(self):
         ruta, _ = QtWidgets.QFileDialog.getOpenFileName(
@@ -104,7 +104,7 @@ class PanelPersistencia(QtWidgets.QWidget):
                 f"No se cargó el archivo (el escenario actual no se modificó):\n\n{error}",
             )
             return
-        except Exception as error:  # JSON mal formado, archivo no encontrado, etc.
+        except Exception as error:  # malformed JSON, file not found, and so on
             QtWidgets.QMessageBox.warning(self, "No se pudo leer el archivo", str(error))
             return
 
@@ -114,7 +114,7 @@ class PanelPersistencia(QtWidgets.QWidget):
         )
         self.cambio_realizado.emit()
 
-    # ---------------- carga por inserciones ----------------
+    # ---------------- insertion loading ----------------
 
     def _cargar_por_inserciones(self):
         ruta, _ = QtWidgets.QFileDialog.getOpenFileName(

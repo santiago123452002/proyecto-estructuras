@@ -16,12 +16,11 @@ from .panel_plano import PanelPlano
 
 class VentanaPrincipal(QtWidgets.QMainWindow):
     """
-    Ventana principal: una barra superior con el estado global del
-    escenario (reloj, modo, deshacer) que aplica a todas las pestañas, y
-    un QTabWidget con una pestaña por pantalla funcional. Por ahora solo
-    existe la pestaña "Eventos"; el resto (AVL, cola, histórico,
-    versiones, auditoría, comparación con BST, plano geográfico) se
-    agregan en los próximos pasos, cada una como su propio widget.
+    Main window: a top bar with the scenario's global state (clock,
+    mode, undo) that applies to every tab, and a QTabWidget with one
+    tab per functional screen. For now only the "Eventos" tab exists;
+    the rest (AVL, queue, history, versions, audit, BST comparison,
+    geographic map) are added in later steps, each as its own widget.
     """
 
     def __init__(self, escenario):
@@ -70,7 +69,7 @@ class VentanaPrincipal(QtWidgets.QMainWindow):
 
         self._actualizar_barra_estado()
 
-    # ---------------- barra superior ----------------
+    # ---------------- top bar ----------------
 
     def _crear_barra_estado(self):
         barra = QtWidgets.QToolBar("Estado del escenario")
@@ -119,26 +118,26 @@ class VentanaPrincipal(QtWidgets.QMainWindow):
         self._actualizar_barra_estado()
 
     def _al_cambiar_pestana(self, indice):
-        """La comparación AVL vs BST se recalcula al entrar a esa
-        pestaña, en vez de mantenerse sincronizada por señales todo el
-        tiempo (el AVL puede cambiar por acciones en cualquier otra
-        pestaña, y no vale la pena redibujar dos árboles completos en
-        cada una de ellas si el usuario ni siquiera está mirando esta)."""
+        """The AVL vs BST comparison is recomputed when entering that
+        tab, instead of staying synchronized by signals all the time
+        (the AVL can change because of actions on any other tab, and it
+        is not worth redrawing two complete trees on every one of them
+        if the user is not even looking at this one)."""
         if self.pestanas.widget(indice) is self.panel_comparacion:
             self.panel_comparacion.refrescar()
 
     def _seleccionar_evento_desde_otra_vista(self, identificador):
-        """Al hacer clic en un nodo del árbol o en un punto del plano
-        geográfico, se salta a la pestaña de Eventos con ese evento ya
-        seleccionado y su detalle a la vista."""
+        """When a tree node or a point on the geographic map is clicked,
+        it jumps to the Eventos tab with that event already selected
+        and its detail in view."""
         self.panel_eventos.seleccionar_por_identificador(identificador)
         self.pestanas.setCurrentWidget(self.panel_eventos)
 
     def _al_cambiar_desde_panel_eventos(self):
-        """Cualquier pestaña que modifique el escenario (Eventos, Cola,
-        Histórico, Versiones, Persistencia, etc.) avisa por aquí para
-        que las DEMÁS se mantengan al día, sin refrescarse
-        innecesariamente a sí misma dos veces."""
+        """Any tab that modifies the scenario (Eventos, Cola, Histórico,
+        Versiones, Persistencia, and so on) notifies through here so the
+        OTHERS stay up to date, without refreshing itself twice
+        unnecessarily."""
         remitente = self.sender()
         if remitente is not self.panel_eventos:
             self.panel_eventos.refrescar()
@@ -158,7 +157,7 @@ class VentanaPrincipal(QtWidgets.QMainWindow):
             self.panel_comparacion.refrescar()
         self._actualizar_barra_estado()
 
-    # ---------------- acciones de la barra ----------------
+    # ---------------- bar actions ----------------
 
     def _avanzar_reloj(self):
         dialogo = QtWidgets.QDialog(self)

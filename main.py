@@ -1,9 +1,9 @@
 """
-Punto de entrada del programa. Corre con:
+Program entry point. Run with:
 
     python main.py
 
-Requiere PySide6 instalado (pip install PySide6).
+Requires PySide6 installed (pip install PySide6).
 """
 
 from gui.app import ejecutar

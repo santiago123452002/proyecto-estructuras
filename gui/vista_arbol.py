@@ -5,9 +5,9 @@ ESPACIO_X = 60
 ESPACIO_Y = 80
 
 COLOR_PRIORIDAD = {
-    1: QtGui.QColor("#8fbc8f"),   # baja: verde suave
-    2: QtGui.QColor("#f0ad4e"),   # media: naranja
-    3: QtGui.QColor("#d9534f"),   # alta: rojo
+    1: QtGui.QColor("#8fbc8f"),   # low: soft green
+    2: QtGui.QColor("#f0ad4e"),   # medium: orange
+    3: QtGui.QColor("#d9534f"),   # high: red
 }
 
 
@@ -145,7 +145,7 @@ class VistaArbolAVL(QtWidgets.QWidget):
             dibujar_lineas(nodo.izquierdo)
             dibujar_lineas(nodo.derecho)
 
-        dibujar_lineas(avl.raiz)  # las líneas van primero, para quedar detrás de los nodos
+        dibujar_lineas(avl.raiz)  # lines go first, so they stay behind the nodes
 
         for nodo, (x, y) in posiciones.items():
             evento = nodo.elemento

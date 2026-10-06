@@ -32,10 +32,10 @@ class Catalogo:
 
     def __init__(self):
         self.avl = ArbolAVL()
-        self._indice_por_id = {}    # id -> Nodo activo
-        self._archivados = {}       # id -> Evento (histórico, sección 10)
-        self._eliminados = {}       # id -> Evento (histórico, sección 10)
-        self._asociaciones = {}     # id_b -> id_a (referencia elegida, sección 7)
+        self._indice_por_id = {}    # id -> active Node
+        self._archivados = {}       # id -> Event (history, section 10)
+        self._eliminados = {}       # id -> Event (history, section 10)
+        self._asociaciones = {}     # id_b -> id_a (chosen reference, section 7)
 
         # Parameters configurable by the user (sections 7, 9, and 10).
         self.w_horas = 48.0
@@ -64,7 +64,7 @@ class Catalogo:
     def __len__(self):
         return len(self._indice_por_id)
 
-    # ---------------- estado de un identificador ----------------
+    # ---------------- identifier state ----------------
 
     def esta_activo(self, identificador):
         return identificador in self._indice_por_id
@@ -87,7 +87,7 @@ class Catalogo:
             return nodo.elemento
         return self._archivados.get(identificador)
 
-    # ---------------- alta manual (sección 6) ----------------
+    # ---------------- manual registration (section 6) ----------------
 
     def alta_evento(self, identificador, magnitud, profundidad, epicentro_x, epicentro_y,
                      fecha_hora, estacion_origen, zonas, reloj_simulacion):
@@ -119,7 +119,7 @@ class Catalogo:
         self.metricas["altas_nuevas"] += 1
         return evento
 
-    # ---------------- consulta (sección 6) ----------------
+    # ---------------- query (section 6) ----------------
 
     def consultar_evento(self, identificador):
         """
@@ -134,7 +134,7 @@ class Catalogo:
         _, visitados = self.avl.buscar_nodo(nodo.clave)
         return nodo.elemento, visitados
 
-    # ---------------- corrección manual (sección 6) ----------------
+    # ---------------- manual correction (section 6) ----------------
 
     def corregir_evento(self, identificador, zonas, reloj_simulacion, **cambios):
         """
@@ -186,7 +186,7 @@ class Catalogo:
         self.metricas["correcciones_aceptadas"] += 1
         return propuesto
 
-    # ---------------- marcar como revisado (sección 6) ----------------
+    # ---------------- mark as reviewed (section 6) ----------------
 
     def marcar_revisado(self, identificador):
         """Does not modify P, M, or I: the key and position in the AVL do not change."""
@@ -196,7 +196,7 @@ class Catalogo:
         nodo.elemento.estado_atencion = "revisado"
         return nodo.elemento
 
-    # ---------------- eliminación individual (sección 6 y 10) ----------------
+    # ---------------- individual deletion (sections 6 and 10) ----------------
 
     def eliminar_evento(self, identificador, balancear=True):
         """
@@ -223,7 +223,7 @@ class Catalogo:
         self.metricas["eliminaciones"] += 1
         return evento
 
-    # ---------------- archivo de subárboles (sección 10) ----------------
+    # ---------------- subtree archiving (section 10) ----------------
 
     def archivar_rama_antigua(self, reloj_simulacion, balancear=True):
         """
@@ -291,7 +291,7 @@ class Catalogo:
         recorrer(nodo)
         return resultado
 
-    # ---------------- procesamiento de reportes (sección 6 y 8) ----------------
+    # ---------------- report processing (sections 6 and 8) ----------------
 
     def procesar_reporte(self, reporte, zonas, reloj_simulacion, balancear=True):
         """
@@ -356,7 +356,7 @@ class Catalogo:
                 "distintos. Se rechaza sin sobrescribir los datos del evento.",
             )
 
-        # reporte.revision > evento_actual.revision: sustituir datos vigentes.
+        # reporte.revision > evento_actual.revision: replace the current data.
         return self._actualizar_por_reporte(nodo, evento_actual, reporte, zonas,
                                              reloj_simulacion, balancear)
 
@@ -453,7 +453,7 @@ class Catalogo:
                 "datos distintos.",
             )
 
-        # revisión mayor y válida: reactiva el evento como pendiente
+        # higher and valid revision: reactivates the event as pending
         try:
             if reporte.fecha_hora > reloj_simulacion:
                 raise ValidacionError(
@@ -485,7 +485,7 @@ class Catalogo:
             evento_nuevo,
         )
 
-    # ---------------- asociaciones candidato/réplica (sección 7) ----------------
+    # ---------------- candidate/aftershock associations (section 7) ----------------
 
     def configurar_asociaciones(self, w_horas=None, r_km=None):
         """Changes W and/or R (both must be positive) and recalculates ALL
@@ -566,7 +566,7 @@ class Catalogo:
         """
         return self.avl.recuperar_equilibrio()
 
-    # ---------------- consultas (sección 11) ----------------
+    # ---------------- queries (section 11) ----------------
 
     def configurar_l_profundidad(self, l_profundidad):
         """L (section 9): depth limit for marking costly access.

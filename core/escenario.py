@@ -7,45 +7,43 @@ from .pila import Pila
 from .procesador_reportes import procesar_siguiente
 from .resultado_reporte import TipoResultadoReporte
 
-# Atributos que forman el "estado operativo" del escenario: lo que la
-# sección 13 exige recuperar al deshacer o restaurar una versión
-# ("datos, histórico, referencias, cola, reloj, parámetros, modo y
-# métricas"). `_pila_deshacer` y `versiones` quedan FUERA a propósito:
-# son metadatos administrativos del propio mecanismo de deshacer, no
-# parte del escenario que se está simulando (el enunciado lo confirma:
-# "[las versiones] no necesitan contener la pila de retroceso ni otras
-# versiones").
+# Attributes that make up the scenario's "operating state": what
+# section 13 requires recovering when undoing or restoring a version
+# ("data, history, references, queue, clock, parameters, mode, and
+# metrics"). `_pila_deshacer` and `versiones` are deliberately left OUT:
+# they are administrative metadata of the undo mechanism itself, not
+# part of the scenario being simulated (the statement confirms it:
+# "[versions] do not need to contain the undo stack or other
+# versions").
 _CAMPOS_ESTADO = ("catalogo", "cola", "zonas", "reloj_simulacion", "modo", "metricas")
 
 
 class Escenario:
     """
-    Orquesta el Catalogo (AVL + histórico + asociaciones), la cola de
-    reportes, el reloj de simulación y el modo de ejecución como una
-    sola unidad deshacible, tal como exige la sección 13: "Cada alta,
-    corrección, eliminación, archivo masivo, cambio de parámetros,
-    avance del reloj, cambio de atención, carga y recuperación global
-    constituye una acción independiente" — y "cada paso de
-    procesamiento de la cola también constituye una acción".
+    Orchestrates the Catalog (AVL + history + associations), the report
+    queue, the simulation clock, and the execution mode as a single
+    undoable unit, as required by section 13: "Each registration,
+    correction, deletion, mass archive, parameter change, clock advance,
+    attention change, load, and global recovery is an independent
+    action" — and "each queue-processing step is also an action".
 
-    Estrategia de deshacer elegida: ANTES de cada acción se guarda una
-    COPIA COMPLETA (deep copy) del estado operativo en la pila; deshacer
-    simplemente restaura la copia más reciente. Se descartó guardar solo
-    el "delta" de cada acción (p. ej. qué rotaciones ocurrieron) porque
-    para deshacerlo con exactitud habría que invertir cada rotación una
-    por una, y el propio enunciado ya aclara que "las inserciones y
-    rotaciones internas de una corrección o archivo masivo no se
-    deshacen por separado" — es decir, la granularidad exigida es la de
-    la ACCIÓN completa, no la de cada paso interno. Copiar todo el
-    estado es más simple de verificar como correcto, a cambio de más
-    memoria por paso: cada snapshot cuesta O(n) en tiempo y memoria,
-    proporcional al número total de eventos (activos + histórico) más
-    el tamaño de la cola pendiente.
+    Chosen undo strategy: BEFORE each action a COMPLETE COPY (deep copy)
+    of the operating state is saved on the stack; undo simply restores
+    the most recent copy. Saving only each action's "delta" (for example,
+    which rotations occurred) was discarded because undoing it exactly
+    would require inverting every rotation one by one, and the statement
+    already clarifies that "the internal insertions and rotations of a
+    correction or mass archive are not undone separately" — that is, the
+    required granularity is that of the complete ACTION, not of each
+    internal step. Copying the whole state is simpler to verify as
+    correct, at the cost of more memory per step: each snapshot costs
+    O(n) in time and memory, proportional to the total number of events
+    (active + history) plus the size of the pending queue.
 
-    Si una acción falla (lanza ValidacionError porque los datos son
-    inválidos), la copia se descarta sin apilarse: como ninguna de las
-    operaciones del Catalogo modifica nada antes de validar, no hace
-    falta deshacer una acción que nunca llegó a aplicarse.
+    If an action fails (it raises ValidacionError because the data is
+    invalid), the copy is discarded without being pushed: since none of
+    the Catalog operations modify anything before validating, there is
+    no need to undo an action that never took effect.
     """
 
     def __init__(self, zonas=None, reloj_simulacion=None):
@@ -63,12 +61,12 @@ class Escenario:
         }
 
         self._pila_deshacer = Pila()
-        self.versiones = {}  # nombre -> snapshot del estado operativo
+        self.versiones = {}  # name -> snapshot of the operating state
 
-    # ---------------- mecanismo de deshacer ----------------
+    # ---------------- undo mechanism ----------------
 
     def _capturar_estado(self):
-        """Copia completa (deep copy) de los campos operativos."""
+        """Complete copy (deep copy) of the operating fields."""
         return {campo: copy.deepcopy(getattr(self, campo)) for campo in _CAMPOS_ESTADO}
 
     def _restaurar_estado(self, estado):
@@ -77,9 +75,8 @@ class Escenario:
 
     def _ejecutar_con_deshacer(self, funcion, *args, **kwargs):
         """
-        Captura el estado, ejecuta `funcion`, y solo si no lanzó
-        excepción apila la copia previa. Devuelve lo que devuelva
-        `funcion`.
+        Captures the state, runs `funcion`, and pushes the previous copy
+        only if it did not raise. Returns whatever `funcion` returns.
         """
         snapshot = self._capturar_estado()
         resultado = funcion(*args, **kwargs)
@@ -88,9 +85,9 @@ class Escenario:
 
     def deshacer(self):
         """
-        Restaura el estado guardado en el último punto de deshacer.
-        Devuelve True si se deshizo algo, False si no había ninguna
-        acción pendiente por deshacer.
+        Restores the state saved at the last undo point.
+        Returns True if something was undone, False if there was no
+        pending action to undo.
         """
         if self._pila_deshacer.esta_vacia():
             return False
@@ -101,29 +98,29 @@ class Escenario:
     def hay_algo_que_deshacer(self):
         return not self._pila_deshacer.esta_vacia()
 
-    # ---------------- versiones nombradas persistentes ----------------
+    # ---------------- persistent named versions ----------------
 
     def guardar_version(self, nombre):
-        """Guarda (o sobrescribe) una copia con nombre del estado
-        operativo actual. No incluye la pila de deshacer ni otras
-        versiones, tal como exige el enunciado."""
+        """Saves (or overwrites) a named copy of the current operating
+        state. It does not include the undo stack or other versions,
+        as required by the statement."""
         self.versiones[nombre] = self._capturar_estado()
 
     def restaurar_version(self, nombre):
         """
-        Restaura una versión guardada. Es, en sí misma, una acción que
-        puede deshacerse: se apila el estado actual antes de aplicar la
-        versión, así que un `deshacer()` posterior regresa exactamente a
-        como estaba el escenario justo antes de restaurar.
+        Restores a saved version. It is itself an action that can be
+        undone: the current state is pushed before applying the version,
+        so a later `deshacer()` returns exactly to how the scenario was
+        just before the restore.
         """
         if nombre not in self.versiones:
             raise ValidacionError(f"No existe una versión guardada con el nombre '{nombre}'.")
 
         def _restaurar():
-            # se aplica una COPIA de lo guardado, para que cambios
-            # posteriores al escenario nunca contaminen la versión
-            # almacenada (la versión sigue disponible para restaurarla
-            # de nuevo más adelante, sin importar qué pase después).
+            # a COPY of what was saved is applied, so later changes
+            # to the scenario never contaminate the stored version
+            # (the version stays available to restore again later,
+            # no matter what happens afterwards).
             self._restaurar_estado(copy.deepcopy(self.versiones[nombre]))
 
         return self._ejecutar_con_deshacer(_restaurar)
@@ -131,7 +128,7 @@ class Escenario:
     def listar_versiones(self):
         return sorted(self.versiones.keys())
 
-    # ---------------- acciones deshacibles (sección 13) ----------------
+    # ---------------- undoable actions (section 13) ----------------
 
     def alta_evento(self, identificador, magnitud, profundidad, epicentro_x, epicentro_y,
                      fecha_hora, estacion_origen):
@@ -197,12 +194,12 @@ class Escenario:
 
     def procesar_siguiente_reporte(self):
         """
-        Un paso de procesamiento de la cola (sección 8 y 13). Es una
-        acción deshacible AUNQUE el reporte termine descartado (revisión
-        antigua, conflicto, etc.): deshacerla regresa tanto el escenario
-        como el reporte a su posición original en la cola. Si la cola
-        está vacía, `cola.desencolar()` lanza IndexError antes de que se
-        apile nada, así que no queda una acción vacía en la pila.
+        One queue-processing step (sections 8 and 13). It is an undoable
+        action EVEN IF the report ends up discarded (old revision,
+        conflict, and so on): undoing it returns both the scenario and
+        the report to its original position in the queue. If the queue
+        is empty, `cola.desencolar()` raises IndexError before anything
+        is pushed, so no empty action is left on the stack.
         """
         def _procesar():
             balancear = (self.modo == "normal")
@@ -223,26 +220,26 @@ class Escenario:
 
         return self._ejecutar_con_deshacer(_procesar)
 
-    # ---------------- persistencia en JSON (sección 12) ----------------
+    # ---------------- JSON persistence (section 12) ----------------
 
     def guardar_json(self, ruta):
-        """Guardado estructural completo: topología real, histórico,
-        cola, reloj, zonas, parámetros, modo y métricas."""
+        """Complete structural save: real topology, history,
+        queue, clock, zones, parameters, mode, and metrics."""
         from .persistencia import exportar_escenario, guardar_json as _guardar_json
         datos = exportar_escenario(self)
         _guardar_json(datos, ruta)
 
     def cargar_por_topologia(self, ruta_o_datos):
         """
-        "Carga por topología" (sección 12). Reemplaza TODO el escenario
-        actual con lo reconstruido y validado a partir del archivo. Si
-        el archivo es inválido (orden roto, referencias inconsistentes,
-        alturas o prioridades que no cuadran, etc.), no se modifica nada
-        — se conserva el escenario anterior y la excepción indica la
-        causa. Es, en sí misma, una acción que puede deshacerse.
+        "Topology loading" (section 12). Replaces the ENTIRE current
+        scenario with what was reconstructed and validated from the file.
+        If the file is invalid (broken order, inconsistent references,
+        heights or priorities that do not match, and so on), nothing is
+        modified — the previous scenario is kept and the exception states
+        the cause. It is itself an action that can be undone.
 
-        `ruta_o_datos` puede ser una ruta de archivo o un dict ya
-        parseado (útil para pruebas sin tocar el disco).
+        `ruta_o_datos` may be a file path or an already parsed dict
+        (useful for tests without touching the disk).
         """
         from .persistencia import construir_escenario_desde_topologia, leer_json
         datos = ruta_o_datos if isinstance(ruta_o_datos, dict) else leer_json(ruta_o_datos)
@@ -260,16 +257,16 @@ class Escenario:
 
     def cargar_por_inserciones(self, ruta_o_datos):
         """
-        "Carga por inserciones" (sección 12). Reemplaza el catálogo
-        activo (NO el histórico ni la cola) insertando la secuencia de
-        eventos del archivo, en orden, en un AVL nuevo Y en un BST de
-        comparación con el mismo comparador. Un identificador repetido
-        en la secuencia invalida el archivo completo.
+        "Insertion loading" (section 12). Replaces the active catalog
+        (NOT the history or the queue) by inserting the file's event
+        sequence, in order, into a new AVL AND into a comparison BST
+        with the same comparator. A repeated identifier in the sequence
+        invalidates the whole file.
 
-        Devuelve (resumen, bst_comparacion): `resumen` trae altura,
-        hojas y raíz de ambos árboles (para la vista comparativa de la
-        sección 15); `bst_comparacion` es el ArbolBST completo, por si
-        la interfaz quiere dibujarlo.
+        Returns (resumen, bst_comparacion): `resumen` carries the height,
+        leaves, and root of both trees (for the section 15 comparison
+        view); `bst_comparacion` is the full ArbolBST, in case the
+        interface wants to draw it.
         """
         from .persistencia import construir_arboles_por_insercion, leer_json
         datos = ruta_o_datos if isinstance(ruta_o_datos, dict) else leer_json(ruta_o_datos)
@@ -301,17 +298,16 @@ class Escenario:
 
         return self._ejecutar_con_deshacer(_cargar)
 
-    # ---------------- indicadores (sección 14) ----------------
+    # ---------------- indicators (section 14) ----------------
 
     def generar_indicadores(self):
         """
-        Reúne todos los indicadores que la sección 14 exige mantener
-        visibles o accesibles: cantidades de eventos activos/históricos,
-        altura, hojas, los 4 recorridos, contadores de correcciones
-        aceptadas / reportes descartados / conflictos / archivos
-        masivos / eventos archivados, casos LL-RR-LR-RL y giros simples,
-        eventos por prioridad, pendientes de atención, y eventos con
-        acceso costoso.
+        Gathers every indicator that section 14 requires to stay visible
+        or accessible: counts of active/historical events, height, leaves,
+        the 4 traversals, counters of accepted corrections / discarded
+        reports / conflicts / mass archives / archived events, LL-RR-LR-RL
+        cases and simple rotations, events by priority, pending attention,
+        and events with costly access.
         """
         catalogo = self.catalogo
         avl = catalogo.avl

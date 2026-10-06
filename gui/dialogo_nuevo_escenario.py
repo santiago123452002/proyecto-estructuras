@@ -7,11 +7,11 @@ from core import Zona
 
 class DialogoNuevoEscenario(QtWidgets.QDialog):
     """
-    Pantalla inicial de la aplicación: define las zonas del escenario y
-    el reloj de simulación inicial. La geometría de las zonas es fija
-    durante toda la ejecución (sección 3), así que esto se pide UNA sola
-    vez, antes de crear el Escenario -- no hay forma de agregar zonas
-    después desde el resto de la interfaz, a propósito.
+    Initial application screen: defines the scenario zones and the
+    initial simulation clock. Zone geometry is fixed for the whole
+    execution (section 3), so this is requested ONCE, before creating
+    the Escenario -- there is intentionally no way to add zones later
+    from the rest of the interface.
     """
 
     def __init__(self, parent=None):

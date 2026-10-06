@@ -32,14 +32,14 @@ class Evento:
         self.profundidad = self._validar_profundidad(profundidad)
         self.epicentro_x = self._validar_coordenada(epicentro_x, "x")
         self.epicentro_y = self._validar_coordenada(epicentro_y, "y")
-        self.fecha_hora = fecha_hora  # datetime en UTC
+        self.fecha_hora = fecha_hora  # datetime in UTC
         self.revision = revision
         self.estaciones = {estacion_origen}
         self.estado_atencion = "pendiente"
-        self.en_zona_poblada = False   # se fija con actualizar_prioridad
-        self.prioridad = None          # idem
+        self.en_zona_poblada = False   # set by actualizar_prioridad
+        self.prioridad = None          # same
 
-    # ---------------- validaciones (sección 3) ----------------
+    # ---------------- validations (section 3) ----------------
 
     @staticmethod
     def _validar_identificador(identificador):
@@ -65,7 +65,7 @@ class Evento:
             raise ValidacionError(f"La coordenada {nombre_eje} debe estar entre 0.0 y 1000.0 km.")
         return _con_un_decimal(valor, f"La coordenada {nombre_eje}")
 
-    # ---------------- prioridad y clave ----------------
+    # ---------------- priority and key ----------------
 
     def actualizar_prioridad(self, en_zona_poblada):
         """Recalculates P from the current data. It must always be called

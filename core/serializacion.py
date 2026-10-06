@@ -23,14 +23,14 @@ from .reporte import Reporte
 """datetime -> ISO 8601 text with the 'Z' suffix, with second precision."""
 
 def fecha_a_texto(fecha_hora):
-    """datetime -> texto ISO 8601 con sufijo 'Z', con precisión de segundos."""
+    """datetime -> ISO 8601 text with the 'Z' suffix, with second precision."""
     if fecha_hora.tzinfo is not None:
         fecha_hora = fecha_hora.astimezone(timezone.utc).replace(tzinfo=None)
     return fecha_hora.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def texto_a_fecha(texto):
-    """texto ISO 8601 (con o sin sufijo 'Z') -> datetime naive en UTC."""
+    """ISO 8601 text (with or without the 'Z' suffix) -> naive datetime in UTC."""
     limpio = texto.strip()
     if limpio.endswith("Z"):
         limpio = limpio[:-1] + "+00:00"
@@ -43,7 +43,7 @@ def texto_a_fecha(texto):
     return fecha
 
 
-# ---------------- Zona ----------------
+# ---------------- Zone ----------------
 
 def zona_a_dict(zona):
     return {
@@ -62,7 +62,7 @@ def dict_a_zona(datos):
         raise ValidacionError(f"Zona con datos inválidos: {error}") from error
 
 
-# ---------------- Evento ----------------
+# ---------------- Event ----------------
 
 def evento_a_dict(evento):
     return {
@@ -75,7 +75,7 @@ def evento_a_dict(evento):
         "revision": evento.revision,
         "estaciones": sorted(evento.estaciones),
         "estado_atencion": evento.estado_atencion,
-        "prioridad": evento.prioridad,  # se valida al recargar, no se asigna directo
+        "prioridad": evento.prioridad,  # validated on reload, not assigned directly
     }
 
 
@@ -121,7 +121,7 @@ def dict_a_evento(datos, zonas):
     return evento
 
 
-# ---------------- Reporte ----------------
+# ---------------- Report ----------------
 
 def reporte_a_dict(reporte):
     return {
@@ -152,7 +152,7 @@ def dict_a_reporte(datos):
         raise ValidacionError(f"Al reporte le falta el campo obligatorio {error}.") from error
 
 
-# ---------------- topología del AVL (carga por topología, sección 12) ----------------
+# ---------------- AVL topology (topology loading, section 12) ----------------
 
 def nodo_a_dict(nodo):
     """

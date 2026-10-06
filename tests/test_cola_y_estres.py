@@ -143,7 +143,7 @@ def test_revision_menor_se_descarta_como_antiguo():
     assert evento.revision == 2
 
 
-# ---------------- reporte tardío (caso de la sección 16) ----------------
+# ---------------- late report (section 16 case) ----------------
 
 def test_reporte_tardio_no_reordena_por_fecha_de_llegada():
     """

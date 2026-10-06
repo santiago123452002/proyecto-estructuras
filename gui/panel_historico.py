@@ -5,9 +5,9 @@ from core import ValidacionError
 
 class PanelHistorico(QtWidgets.QWidget):
     """
-    Eliminación individual y archivo de subárboles antiguos (secciones 6
-    y 10), más la tabla del histórico (eventos archivados y eliminados,
-    sección 10: "el histórico conserva sus datos e identidades").
+    Individual deletion and archiving of old subtrees (sections 6 and
+    10), plus the history table (archived and deleted events, section
+    10: "the history keeps their data and identities").
     """
 
     cambio_realizado = QtCore.Signal()
@@ -19,7 +19,7 @@ class PanelHistorico(QtWidgets.QWidget):
         layout_principal = QtWidgets.QHBoxLayout(self)
         columna_izquierda = QtWidgets.QVBoxLayout()
 
-        # ---------------- eliminación individual ----------------
+        # ---------------- individual deletion ----------------
         grupo_eliminar = QtWidgets.QGroupBox("Eliminación individual (sección 6)")
         layout_eliminar = QtWidgets.QFormLayout(grupo_eliminar)
 
@@ -39,7 +39,7 @@ class PanelHistorico(QtWidgets.QWidget):
 
         columna_izquierda.addWidget(grupo_eliminar)
 
-        # ---------------- archivo masivo ----------------
+        # ---------------- mass archive ----------------
         grupo_archivo = QtWidgets.QGroupBox("Archivar rama de eventos antiguos (sección 10)")
         layout_archivo = QtWidgets.QFormLayout(grupo_archivo)
 
@@ -72,7 +72,7 @@ class PanelHistorico(QtWidgets.QWidget):
         columna_izquierda.addStretch()
         layout_principal.addLayout(columna_izquierda, stretch=1)
 
-        # ---------------- tabla del histórico ----------------
+        # ---------------- history table ----------------
         columna_derecha = QtWidgets.QVBoxLayout()
         columna_derecha.addWidget(QtWidgets.QLabel("Histórico (archivados y eliminados)"))
 
@@ -88,7 +88,7 @@ class PanelHistorico(QtWidgets.QWidget):
 
         self.refrescar()
 
-    # ---------------- refresco ----------------
+    # ---------------- refresh ----------------
 
     def refrescar(self):
         catalogo = self.escenario.catalogo
@@ -110,7 +110,7 @@ class PanelHistorico(QtWidgets.QWidget):
             for columna, valor in enumerate(valores):
                 self.tabla.setItem(fila, columna, QtWidgets.QTableWidgetItem(str(valor)))
 
-    # ---------------- acciones ----------------
+    # ---------------- actions ----------------
 
     def _eliminar_evento(self):
         identificador = self.campo_id_eliminar.value()

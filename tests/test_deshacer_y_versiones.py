@@ -1,7 +1,7 @@
 """
-Pruebas de la Fase 6: Pila LIFO explícita, y Escenario (deshacer sobre
-alta/corrección/eliminación/archivo/parámetros/reloj/modo/cola, más
-versiones nombradas persistentes) — sección 13.
+Phase 6 tests: explicit LIFO stack, and Escenario (undo over
+registration/correction/deletion/archive/parameters/clock/mode/queue, plus
+persistent named versions) — section 13.
 """
 
 import sys
@@ -37,7 +37,7 @@ def _reporte(identificador, magnitud, revision, estacion, fecha_hora=None):
                     fecha_hora or datetime(2026, 9, 10, 9, 0, 0), revision, estacion)
 
 
-# ---------------- Pila (LIFO) ----------------
+# ---------------- Stack (LIFO) ----------------
 
 def test_pila_es_lifo():
     pila = Pila()
@@ -62,7 +62,7 @@ def test_pila_vacia_lanza_error():
         pila.ver_cima()
 
 
-# ---------------- deshacer: alta ----------------
+# ---------------- undo: registration ----------------
 
 def test_deshacer_alta_evento_lo_retira_por_completo():
     escenario = _escenario()
@@ -74,13 +74,13 @@ def test_deshacer_alta_evento_lo_retira_por_completo():
 
     assert deshecho is True
     assert len(escenario.catalogo) == 0
-    assert not escenario.catalogo.identificador_en_uso(100)  # como si nunca hubiera existido
+    assert not escenario.catalogo.identificador_en_uso(100)  # as if it had never existed
 
 
 def test_alta_invalida_no_deja_nada_que_deshacer():
     escenario = _escenario()
     with pytest.raises(ValidacionError):
-        escenario.alta_evento(101, 99.0, 10.0, 500.0, 500.0,  # magnitud fuera de rango
+        escenario.alta_evento(101, 99.0, 10.0, 500.0, 500.0,  # magnitude out of range
                                datetime(2026, 9, 10, 9, 0, 0), "EST-01")
     assert escenario.hay_algo_que_deshacer() is False
 
@@ -90,7 +90,7 @@ def test_deshacer_sin_acciones_previas_devuelve_false():
     assert escenario.deshacer() is False
 
 
-# ---------------- deshacer: corrección ----------------
+# ---------------- undo: correction ----------------
 
 def test_deshacer_correccion_restaura_magnitud_y_revision_anteriores():
     escenario = _escenario()
@@ -102,7 +102,7 @@ def test_deshacer_correccion_restaura_magnitud_y_revision_anteriores():
     assert evento_tras_correccion.prioridad == 3
     assert evento_tras_correccion.revision == 2
 
-    escenario.deshacer()  # deshace la corrección
+    escenario.deshacer()  # undoes the correction
 
     evento_restaurado, _ = escenario.catalogo.consultar_evento(200)
     assert evento_restaurado.magnitud == 4.8
@@ -110,7 +110,7 @@ def test_deshacer_correccion_restaura_magnitud_y_revision_anteriores():
     assert evento_restaurado.prioridad == 2
 
 
-# ---------------- deshacer: eliminación y archivo ----------------
+# ---------------- undo: deletion and archive ----------------
 
 def test_deshacer_eliminacion_reactiva_el_evento():
     escenario = _escenario()
@@ -145,7 +145,7 @@ def test_deshacer_archivo_masivo_reactiva_todos_los_eventos_archivados():
         assert not escenario.catalogo.esta_archivado(identificador)
 
 
-# ---------------- deshacer: parámetros, reloj y modo ----------------
+# ---------------- undo: parameters, clock, and mode ----------------
 
 def test_deshacer_cambio_de_parametros_w_r():
     escenario = _escenario()
@@ -154,7 +154,7 @@ def test_deshacer_cambio_de_parametros_w_r():
 
     escenario.deshacer()
 
-    assert escenario.catalogo.w_horas == 48.0  # valor inicial por defecto
+    assert escenario.catalogo.w_horas == 48.0  # initial default value
     assert escenario.catalogo.r_km == 40.0
 
 
@@ -186,20 +186,20 @@ def test_deshacer_cambio_de_modo():
     assert escenario.modo == "normal"
 
 
-# ---------------- deshacer: paso de cola (incluso si se descartó) ----------------
+# ---------------- undo: queue step (even if it was discarded) ----------------
 
 def test_deshacer_paso_de_cola_restablece_posicion_del_reporte():
     """
-    Sección 13: deshacer un paso de cola restablece tanto el escenario
-    como la posición del reporte en la cola, INCLUSO si ese paso había
-    descartado un reporte (revisión antigua, en este caso).
+    Section 13: undoing a queue step restores both the scenario and the
+    report's position in the queue, EVEN IF that step had discarded a
+    report (an old revision, in this case).
     """
     escenario = _escenario()
     escenario.alta_evento(500, 5.0, 10.0, 500.0, 500.0,
                            datetime(2026, 9, 10, 9, 0, 0), "EST-01")
-    escenario.corregir_evento(500, magnitud=5.5)  # sube a revisión 2
+    escenario.corregir_evento(500, magnitud=5.5)  # rises to revision 2
 
-    escenario.cola.encolar(_reporte(500, 9.0, revision=1, estacion="EST-02"))  # revisión vieja
+    escenario.cola.encolar(_reporte(500, 9.0, revision=1, estacion="EST-02"))  # old revision
     assert len(escenario.cola) == 1
 
     reporte, resultado = escenario.procesar_siguiente_reporte()
@@ -210,7 +210,7 @@ def test_deshacer_paso_de_cola_restablece_posicion_del_reporte():
 
     escenario.deshacer()
 
-    assert len(escenario.cola) == 1  # el reporte descartado vuelve a la cola
+    assert len(escenario.cola) == 1  # the discarded report returns to the queue
     assert escenario.cola.ver_orden()[0].identificador == 500
     assert escenario.metricas["reportes_procesados"] == 0
 
@@ -229,7 +229,7 @@ def test_deshacer_paso_de_cola_con_alta_nueva():
     assert len(escenario.cola) == 1
 
 
-# ---------------- deshacer: recuperación global (modo estrés) ----------------
+# ---------------- undo: global recovery (stress mode) ----------------
 
 def test_deshacer_recuperar_equilibrio_regresa_al_arbol_degradado():
     escenario = _escenario()
@@ -250,7 +250,7 @@ def test_deshacer_recuperar_equilibrio_regresa_al_arbol_degradado():
     assert escenario.catalogo.avl.altura_total() == altura_degradada
 
 
-# ---------------- deshacer acciones sucesivas ----------------
+# ---------------- undo successive actions ----------------
 
 def test_deshacer_dos_acciones_sucesivas_en_orden_inverso():
     escenario = _escenario()
@@ -268,10 +268,10 @@ def test_deshacer_dos_acciones_sucesivas_en_orden_inverso():
     escenario.deshacer()
     assert len(escenario.catalogo) == 0
 
-    assert escenario.deshacer() is False  # ya no queda nada por deshacer
+    assert escenario.deshacer() is False  # nothing left to undo
 
 
-# ---------------- versiones nombradas persistentes ----------------
+# ---------------- persistent named versions ----------------
 
 def test_guardar_y_restaurar_version():
     escenario = _escenario()
@@ -301,7 +301,7 @@ def test_restaurar_version_es_deshacible():
     evento, _ = escenario.catalogo.consultar_evento(1000)
     assert evento.magnitud == 5.0
 
-    escenario.deshacer()  # deshace SOLO la restauración, no la corrección original
+    escenario.deshacer()  # undoes ONLY the restore, not the original correction
 
     evento_tras_deshacer, _ = escenario.catalogo.consultar_evento(1000)
     assert evento_tras_deshacer.magnitud == 6.5
@@ -321,9 +321,9 @@ def test_versiones_no_se_contaminan_con_cambios_posteriores():
 
     escenario.corregir_evento(1100, magnitud=7.0)
     escenario.restaurar_version("v1")
-    escenario.corregir_evento(1100, magnitud=8.0)  # cambia el escenario ACTUAL, no la versión guardada
+    escenario.corregir_evento(1100, magnitud=8.0)  # changes the CURRENT scenario, not the saved version
 
-    escenario.restaurar_version("v1")  # debe volver a dar magnitud 5.0, no 8.0
+    escenario.restaurar_version("v1")  # must go back to magnitude 5.0, not 8.0
     evento, _ = escenario.catalogo.consultar_evento(1100)
     assert evento.magnitud == 5.0
 

@@ -168,7 +168,7 @@ def construir_escenario_desde_topologia(datos):
     if not isinstance(l_profundidad, int) or l_profundidad < 0:
         raise ValidacionError("El parámetro L debe ser un entero no negativo.")
 
-    # --- ya todo validó: recién ahora se arman los objetos reales ---
+    # --- everything already validated: only now are the real objects built ---
 
     avl = ArbolAVL()
     avl.raiz = raiz
@@ -209,7 +209,7 @@ def construir_escenario_desde_topologia(datos):
     for datos_reporte in datos.get("cola", []):
         cola.encolar(dict_a_reporte(datos_reporte))
 
-    from .escenario import Escenario  # import diferido: evita ciclo con escenario.py
+    from .escenario import Escenario  # deferred import: avoids a cycle with escenario.py
     nuevo = Escenario(zonas=zonas, reloj_simulacion=reloj_simulacion)
     nuevo.catalogo = catalogo
     nuevo.cola = cola
@@ -218,7 +218,7 @@ def construir_escenario_desde_topologia(datos):
     return nuevo
 
 
-# ---------------- carga por inserciones (comparación AVL vs BST) ----------------
+# ---------------- insertion loading (AVL vs BST comparison) ----------------
 
 def construir_arboles_por_insercion(eventos_json, zonas):
     """
@@ -241,8 +241,8 @@ def construir_arboles_por_insercion(eventos_json, zonas):
     avl = ArbolAVL()
     bst = ArbolBST()
     for datos_evento in eventos_json:
-        # dos instancias de Evento independientes: cada árbol tiene sus
-        # propios nodos, sin compartir estado entre sí
+        # two independent Event instances: each tree has its
+        # own nodes, without sharing state with the other
         avl.insertar(dict_a_evento(datos_evento, zonas))
         bst.insertar(dict_a_evento(datos_evento, zonas))
 
@@ -263,7 +263,7 @@ def construir_arboles_por_insercion(eventos_json, zonas):
     return avl, bst, resumen
 
 
-# ---------------- lectura/escritura de archivo ----------------
+# ---------------- file reading/writing ----------------
 
 def guardar_json(datos, ruta):
     """Writes `datos` (a JSON-compatible dict) to `ruta`, with

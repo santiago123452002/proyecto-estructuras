@@ -7,15 +7,15 @@ from core import ValidacionError
 
 class PanelEventos(QtWidgets.QWidget):
     """
-    Alta, consulta y corrección manual de eventos (sección 6). Esta
-    clase es SOLO interfaz: arma el formulario, pinta la tabla, y llama
-    a los métodos de `Escenario` -- nunca valida rangos, calcula
-    prioridad, ni toca el AVL directamente. Si una operación falla, el
-    propio `Escenario`/`Catalogo` ya devolvió un `ValidacionError` con
-    el motivo; aquí solo se muestra en un cuadro de diálogo.
+    Manual event registration, query, and correction (section 6). This
+    class is ONLY the interface: it builds the form, paints the table,
+    and calls `Escenario` methods -- it never validates ranges, computes
+    priority, or touches the AVL directly. If an operation fails,
+    `Escenario`/`Catalogo` already returned a `ValidacionError` with the
+    reason; here it is only shown in a dialog.
     """
 
-    cambio_realizado = QtCore.Signal()  # para que otras pestañas (ej. el árbol) se refresquen
+    cambio_realizado = QtCore.Signal()  # so other tabs (e.g. the tree) refresh
 
     def __init__(self, escenario, parent=None):
         super().__init__(parent)
@@ -24,7 +24,7 @@ class PanelEventos(QtWidgets.QWidget):
 
         layout_principal = QtWidgets.QHBoxLayout(self)
 
-        # ---------------- columna izquierda: formulario + detalle ----------------
+        # ---------------- left column: form + detail ----------------
         columna_izquierda = QtWidgets.QVBoxLayout()
 
         grupo_formulario = QtWidgets.QGroupBox("Alta / corrección de evento")
@@ -96,7 +96,7 @@ class PanelEventos(QtWidgets.QWidget):
         columna_izquierda.addWidget(grupo_detalle)
         layout_principal.addLayout(columna_izquierda, stretch=1)
 
-        # ---------------- columna derecha: tabla de eventos activos ----------------
+        # ---------------- right column: active events table ----------------
         columna_derecha = QtWidgets.QVBoxLayout()
         columna_derecha.addWidget(QtWidgets.QLabel("Eventos activos"))
 
@@ -115,12 +115,12 @@ class PanelEventos(QtWidgets.QWidget):
 
         self.refrescar()
 
-    # ---------------- refresco ----------------
+    # ---------------- refresh ----------------
 
     def refrescar(self):
-        """Vuelve a pintar la tabla desde el Catalogo y actualiza el
-        panel de detalle. Se llama después de CUALQUIER acción que
-        pudiera haber cambiado el catálogo (incluido un deshacer)."""
+        """Repaints the table from the Catalogo and updates the detail
+        panel. Called after ANY action that might have changed the
+        catalog (including an undo)."""
         catalogo = self.escenario.catalogo
         eventos = [nodo.elemento for nodo in catalogo._indice_por_id.values()]
         eventos.sort(key=lambda e: e.identificador)
@@ -151,7 +151,7 @@ class PanelEventos(QtWidgets.QWidget):
 
         self._actualizar_detalle()
 
-    # ---------------- selección externa (ej. desde la vista del árbol) ----------------
+    # ---------------- external selection (e.g. from the tree view) ----------------
 
     def seleccionar_por_identificador(self, identificador):
         for fila in range(self.tabla.rowCount()):
@@ -160,7 +160,7 @@ class PanelEventos(QtWidgets.QWidget):
                 self.tabla.selectRow(fila)
                 return
 
-    # ---------------- selección en la tabla ----------------
+    # ---------------- table selection ----------------
 
     def _seleccion_cambio(self):
         filas = self.tabla.selectionModel().selectedRows()
@@ -216,7 +216,7 @@ class PanelEventos(QtWidgets.QWidget):
         if evento is None:
             return
         self.campo_id.setValue(evento.identificador)
-        self.campo_id.setEnabled(False)  # el identificador es inmutable al corregir
+        self.campo_id.setEnabled(False)  # the identifier is immutable when correcting
         self.campo_magnitud.setValue(evento.magnitud)
         self.campo_profundidad.setValue(evento.profundidad)
         self.campo_x.setValue(evento.epicentro_x)
@@ -225,7 +225,7 @@ class PanelEventos(QtWidgets.QWidget):
         hora = QtCore.QTime(evento.fecha_hora.hour, evento.fecha_hora.minute, evento.fecha_hora.second)
         self.campo_fecha.setDate(fecha)
         self.campo_fecha.setTime(hora)
-        self.campo_estacion.setEnabled(False)  # no aplica al corregir (la estación va en los reportes)
+        self.campo_estacion.setEnabled(False)  # does not apply when correcting (the station belongs on reports)
 
     def _limpiar_formulario(self):
         self.tabla.clearSelection()
@@ -242,7 +242,7 @@ class PanelEventos(QtWidgets.QWidget):
         self.boton_marcar_revisado.setEnabled(False)
         self._actualizar_detalle()
 
-    # ---------------- acciones ----------------
+    # ---------------- actions ----------------
 
     def _fecha_hora_del_formulario(self):
         qdt = self.campo_fecha.dateTime()

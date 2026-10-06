@@ -140,7 +140,7 @@ def test_correccion_cambia_prioridad_de_2_a_3_y_sube_revision():
 
     evento_final, _ = catalogo.consultar_evento(30)
     assert evento_final.clave == (3, 6.2, 30)
-    assert len(catalogo) == 1  # nunca se creó un segundo nodo
+    assert len(catalogo) == 1  # a second node was never created
 
 
 def test_correccion_invalida_no_aplica_ningun_cambio():
@@ -149,7 +149,7 @@ def test_correccion_invalida_no_aplica_ningun_cambio():
     catalogo.alta_evento(40, 5.0, 10.0, 500.0, 500.0,
                           datetime(2026, 9, 7, 10, 0, 0), "EST-01", zonas, RELOJ)
     with pytest.raises(ValidacionError):
-        catalogo.corregir_evento(40, zonas, RELOJ, magnitud=99.0)  # fuera de rango
+        catalogo.corregir_evento(40, zonas, RELOJ, magnitud=99.0)  # out of range
 
     evento, _ = catalogo.consultar_evento(40)
     assert evento.magnitud == 5.0

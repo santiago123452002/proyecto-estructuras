@@ -32,11 +32,11 @@ def test_direccion_insercion_ejemplo_enunciado():
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(3, 5.2, 10))
 
-    # (2, 5.8, 20) -> izquierda (prioridad menor manda, aunque 5.8 > 5.2)
+    # (2, 5.8, 20) -> left (lower priority wins, even though 5.8 > 5.2)
     avl.insertar(ElementoPrueba(2, 5.8, 20))
     assert avl.raiz.izquierdo.clave == (2, 5.8, 20)
 
-    # (3, 6.1, 30) -> derecha (empatan prioridad, 6.1 > 5.2)
+    # (3, 6.1, 30) -> right (priorities tie, 6.1 > 5.2)
     avl.insertar(ElementoPrueba(3, 6.1, 30))
     assert avl.raiz.derecho is not None
     assert (3, 6.1, 30) in [n.clave for n in [avl.raiz, avl.raiz.izquierdo, avl.raiz.derecho,
@@ -55,7 +55,7 @@ def test_rotacion_ll():
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(1, 5.0, 30))
     avl.insertar(ElementoPrueba(1, 5.0, 20))
-    avl.insertar(ElementoPrueba(1, 5.0, 10))  # dispara rotación LL
+    avl.insertar(ElementoPrueba(1, 5.0, 10))  # triggers an LL rotation
 
     assert avl.raiz.clave == (1, 5.0, 20)
     assert avl.raiz.izquierdo.clave == (1, 5.0, 10)
@@ -70,7 +70,7 @@ def test_rotacion_rr():
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(1, 5.0, 10))
     avl.insertar(ElementoPrueba(1, 5.0, 20))
-    avl.insertar(ElementoPrueba(1, 5.0, 30))  # dispara rotación RR
+    avl.insertar(ElementoPrueba(1, 5.0, 30))  # triggers an RR rotation
 
     assert avl.raiz.clave == (1, 5.0, 20)
     assert avl.raiz.izquierdo.clave == (1, 5.0, 10)
@@ -81,7 +81,7 @@ def test_rotacion_lr():
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(1, 5.0, 30))
     avl.insertar(ElementoPrueba(1, 5.0, 10))
-    avl.insertar(ElementoPrueba(1, 5.0, 20))  # dispara rotación LR
+    avl.insertar(ElementoPrueba(1, 5.0, 20))  # triggers an LR rotation
 
     assert avl.raiz.clave == (1, 5.0, 20)
     assert avl.raiz.izquierdo.clave == (1, 5.0, 10)
@@ -92,7 +92,7 @@ def test_rotacion_rl():
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(1, 5.0, 10))
     avl.insertar(ElementoPrueba(1, 5.0, 30))
-    avl.insertar(ElementoPrueba(1, 5.0, 20))  # dispara rotación RL
+    avl.insertar(ElementoPrueba(1, 5.0, 20))  # triggers an RL rotation
 
     assert avl.raiz.clave == (1, 5.0, 20)
     assert avl.raiz.izquierdo.clave == (1, 5.0, 10)
@@ -104,7 +104,7 @@ def test_avl_permanece_balanceado_con_muchas_inserciones():
     for i in range(1, 51):
         avl.insertar(ElementoPrueba(1, 5.0, i))
     assert all(fb in (-1, 0, 1) for fb in _factores_balance(avl))
-    # log2(50) ~ 5.6, un AVL con 50 nodos no debería superar esa altura por mucho
+    # log2(50) ~ 5.6; an AVL with 50 nodes should not exceed that height by much
     assert avl.altura_total() <= 7
 
 
@@ -147,9 +147,9 @@ def test_bst_no_balancea_y_avl_si_con_insercion_ascendente():
         bst.insertar(ElementoPrueba(1, 5.0, i))
         avl.insertar(ElementoPrueba(1, 5.0, i))
 
-    assert bst.altura() == n - 1        # degenerado: una cadena
-    assert avl.altura_total() < bst.altura()  # el AVL se mantiene compacto
-    assert bst.recorrido_inorden.__call__() or True  # recorridos disponibles
+    assert bst.altura() == n - 1        # degenerate: a chain
+    assert avl.altura_total() < bst.altura()  # the AVL stays compact
+    assert bst.recorrido_inorden.__call__() or True  # traversals available
 
 
 def _factores_balance(avl):

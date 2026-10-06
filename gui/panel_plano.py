@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtGui, QtCore
 
-ESCALA = 0.6  # píxeles por km (el plano va de 0 a 1000 km -> 600 px)
+ESCALA = 0.6  # pixels per km (the map goes from 0 to 1000 km -> 600 px)
 RADIO_EVENTO = 8
 
 COLOR_PRIORIDAD = {
@@ -14,8 +14,8 @@ COLOR_ZONA_NO_POBLADA = QtGui.QColor(90, 90, 90, 30)
 
 
 class _PuntoEvento(QtWidgets.QGraphicsEllipseItem):
-    """Círculo clicable que representa un evento en el plano, ubicado en
-    su epicentro real."""
+    """Clickable circle representing an event on the map, placed at
+    its real epicenter."""
 
     def __init__(self, identificador, x, y, radio, color, al_hacer_clic):
         super().__init__(-radio, -radio, radio * 2, radio * 2)
@@ -36,11 +36,11 @@ class _PuntoEvento(QtWidgets.QGraphicsEllipseItem):
 
 class PanelPlano(QtWidgets.QWidget):
     """
-    Plano geográfico del escenario (sección 15): las zonas (rectángulos
-    de 0 a 1000 km en ambos ejes, fijas durante toda la ejecución) y los
-    eventos activos ubicados en su epicentro real, coloreados por
-    prioridad -- el mismo código de color que la vista del árbol, para
-    que sea consistente en toda la aplicación.
+    Geographic map of the scenario (section 15): the zones (rectangles
+    from 0 to 1000 km on both axes, fixed for the whole execution) and
+    the active events placed at their real epicenter, colored by
+    priority -- the same color code as the tree view, so it stays
+    consistent across the application.
     """
 
     evento_seleccionado = QtCore.Signal(int)
@@ -79,7 +79,7 @@ class PanelPlano(QtWidgets.QWidget):
     def refrescar(self):
         self.escena.clear()
 
-        # marco del plano completo (0..1000 km en ambos ejes, sección 3)
+        # frame of the full map (0..1000 km on both axes, section 3)
         self.escena.addRect(
             0, 0, 1000 * ESCALA, 1000 * ESCALA, QtGui.QPen(QtGui.QColor("#333333"), 2)
         )

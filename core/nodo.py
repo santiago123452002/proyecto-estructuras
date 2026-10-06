@@ -16,7 +16,7 @@ class Nodo:
         self.izquierdo = None
         self.derecho = None
         self.padre = None
-        self.altura = 0  # solo lo usa el AVL; el BST lo ignora
+        self.altura = 0  # used only by the AVL; the BST ignores it
  
     @property
     def clave(self):

@@ -78,7 +78,7 @@ def test_buscar_por_filtros_combina_magnitud_profundidad_y_fecha():
     )
     identificadores = sorted(e.identificador for e in resultado)
     assert identificadores == [1]  # 2 tiene M=7 (fuera), 3 tiene H=200 (fuera), 4 es muy viejo
-    assert visitados == 4  # recorrido completo, documentado en el código
+    assert visitados == 4  # full traversal, documented in the code
 
 
 def test_buscar_por_filtros_sin_restricciones_devuelve_todo():
@@ -112,7 +112,7 @@ def test_consultar_asociaciones_considera_archivados():
     archivados = escenario.archivar_rama_antigua()
     assert 1 in archivados
 
-    info = escenario.catalogo.consultar_asociaciones(1)  # no debe lanzar error
+    info = escenario.catalogo.consultar_asociaciones(1)  # must not raise
     assert info["candidatos"] == []
 
 
@@ -187,7 +187,7 @@ def test_verificar_estructura_en_modo_estres_reporta_desbalance_esperado_no_erro
 def test_verificar_estructura_detecta_asociacion_rota_manualmente():
     escenario = _escenario()
     escenario.alta_evento(1, 5.0, 10.0, 500.0, 500.0, datetime(2026, 9, 10, 9, 0, 0), "EST-01")
-    escenario.catalogo._asociaciones[1] = 999  # referencia a un id inexistente, a mano
+    escenario.catalogo._asociaciones[1] = 999  # reference to a nonexistent id, set by hand
 
     reporte = escenario.catalogo.verificar_estructura()
     assert reporte["ok"] is False
@@ -218,7 +218,7 @@ def test_generar_indicadores_cuenta_archivos_y_eliminaciones():
     escenario = _escenario()
     fecha_antigua = datetime(2026, 9, 1, 9, 0, 0)
     escenario.alta_evento(1, 2.0, 10.0, 500.0, 500.0, fecha_antigua, "EST-01")
-    escenario.archivar_rama_antigua()  # evento 1 es el único nodo: se archiva solo
+    escenario.archivar_rama_antigua()  # event 1 is the only node: it is archived alone
 
     escenario.alta_evento(2, 5.0, 10.0, 500.0, 500.0, datetime(2026, 9, 10, 9, 0, 0), "EST-01")
     escenario.eliminar_evento(2)
@@ -234,11 +234,11 @@ def test_generar_indicadores_cuenta_archivos_y_eliminaciones():
 def test_generar_indicadores_cuenta_reportes_por_tipo():
     escenario = _escenario()
     escenario.alta_evento(1, 5.0, 10.0, 500.0, 500.0, datetime(2026, 9, 10, 9, 0, 0), "EST-01")
-    escenario.corregir_evento(1, magnitud=5.5)  # revisión -> 2
+    escenario.corregir_evento(1, magnitud=5.5)  # revision -> 2
 
     from core import Reporte
     escenario.cola.encolar(Reporte(1, 9.0, 10.0, 500.0, 500.0,
-                                    datetime(2026, 9, 10, 9, 0, 0), 1, "EST-02"))  # antiguo
+                                    datetime(2026, 9, 10, 9, 0, 0), 1, "EST-02"))  # old
     escenario.procesar_siguiente_reporte()
     escenario.cola.encolar(Reporte(1, 9.0, 10.0, 500.0, 500.0,
                                     datetime(2026, 9, 10, 9, 0, 0), 2, "EST-02"))  # conflicto (misma rev, otros datos)
@@ -262,10 +262,10 @@ def test_metricas_se_deshacen_junto_con_la_accion():
     escenario.corregir_evento(1, magnitud=6.0)
     assert escenario.catalogo.metricas["correcciones_aceptadas"] == 1
 
-    escenario.deshacer()  # deshace la corrección
+    escenario.deshacer()  # undoes the correction
     assert escenario.catalogo.metricas["correcciones_aceptadas"] == 0
 
-    escenario.deshacer()  # deshace la alta
+    escenario.deshacer()  # undoes the registration
     assert escenario.catalogo.metricas["altas_nuevas"] == 0
 
 

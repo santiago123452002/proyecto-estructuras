@@ -1,10 +1,10 @@
 """
-Prueba de humo de la Fase 9 (GUI): confirma que la ventana principal y
-sus widgets se construyen sin errores y que refrescar() no revienta,
-usando una plataforma Qt "offscreen" (sin necesidad de pantalla).
+Phase 9 (GUI) smoke test: confirms that the main window and its widgets
+build without errors and that refrescar() does not crash, using an
+"offscreen" Qt platform (no display required).
 
-Se salta automáticamente si PySide6 no está instalado, para no romper
-el resto de la suite en un entorno donde solo se corre `core/`.
+It is skipped automatically if PySide6 is not installed, so the rest of
+the suite is not broken in an environment where only `core/` is run.
 """
 
 import sys
@@ -35,12 +35,12 @@ def app():
 @pytest.fixture(autouse=True)
 def _sin_dialogos_modales_bloqueantes(monkeypatch):
     """
-    QMessageBox.information/warning/question son diálogos MODALES: su
-    exec() se queda esperando un clic real. En un entorno sin pantalla
-    (como esta suite, con QT_QPA_PLATFORM=offscreen) eso cuelga la
-    prueba para siempre. Se reemplazan por versiones que no bloquean,
-    ya que lo que se está probando aquí es la lógica que decide mostrar
-    el diálogo, no el diálogo en sí.
+    QMessageBox.information/warning/question are MODAL dialogs: their
+    exec() waits for a real click. In a headless environment (like this
+    suite, with QT_QPA_PLATFORM=offscreen) that hangs the test forever.
+    They are replaced by non-blocking versions, since what is being
+    tested here is the logic that decides to show the dialog, not the
+    dialog itself.
     """
     from PySide6 import QtWidgets
     monkeypatch.setattr(QtWidgets.QMessageBox, "information", staticmethod(lambda *a, **k: None))
@@ -126,7 +126,7 @@ def test_dialogo_nuevo_escenario_agrega_y_quita_zonas(app):
     assert len(dialogo.zonas_definidas()) == 0
 
 
-# ---------------- vista del árbol AVL ----------------
+# ---------------- AVL tree view ----------------
 
 def test_vista_arbol_dibuja_un_nodo_por_evento(app):
     from gui.vista_arbol import VistaArbolAVL
@@ -147,7 +147,7 @@ def test_vista_arbol_arbol_vacio_no_revienta(app):
     escenario = Escenario(zonas=[Zona("Z", 0.0, 1000.0, 0.0, 1000.0, poblada=True)],
                            reloj_simulacion=RELOJ)
     vista = VistaArbolAVL(escenario)
-    assert vista.escena.items() != []  # al menos el texto "(árbol vacío...)"
+    assert vista.escena.items() != []  # at least the "(empty tree...)" text
 
 
 def test_click_en_nodo_emite_senal_con_el_identificador(app):
@@ -190,7 +190,7 @@ def test_alta_desde_panel_eventos_refresca_la_vista_del_arbol(app):
     assert len(nodos_graficos) == 3
 
 
-# ---------------- cola de reportes ----------------
+# ---------------- report queue ----------------
 
 def test_panel_cola_encola_y_muestra_en_la_tabla(app):
     from gui.panel_cola import PanelCola
@@ -206,7 +206,7 @@ def test_panel_cola_encola_y_muestra_en_la_tabla(app):
 
     assert len(escenario.cola) == 1
     assert panel.tabla.rowCount() == 1
-    assert panel.tabla.item(0, 1).text() == "1"  # columna "ID evento"
+    assert panel.tabla.item(0, 1).text() == "1"  # "event ID" column
 
 
 def test_panel_cola_encolar_sin_estacion_no_encola(app):
@@ -248,9 +248,9 @@ def test_procesar_un_paso_con_cola_vacia_no_revienta(app):
 
 def test_procesamiento_continuo_drena_toda_la_cola(app):
     """
-    Se dispara el temporizador manualmente (en vez de esperar el
-    intervalo real) para probar la lógica sin depender de tiempos
-    reales en la suite de pruebas.
+    The timer is fired manually (instead of waiting for the real
+    interval) to test the logic without depending on real time in the
+    test suite.
     """
     from gui.panel_cola import PanelCola
     from core import Reporte
@@ -262,15 +262,15 @@ def test_procesamiento_continuo_drena_toda_la_cola(app):
                                         datetime(2026, 9, 10, 9, 0, 0), 1, "EST-03"))
     panel.refrescar()
 
-    panel._alternar_procesamiento_continuo()  # arranca el temporizador
+    panel._alternar_procesamiento_continuo()  # starts the timer
     assert panel._temporizador.isActive()
     assert panel.boton_procesar_todos.text() == "Detener"
 
-    for _ in range(5):  # de sobra para drenar 3 reportes
+    for _ in range(5):  # more than enough to drain 3 reports
         panel._paso_continuo()
 
     assert escenario.cola.esta_vacia()
-    assert not panel._temporizador.isActive()  # se detuvo solo al vaciarse
+    assert not panel._temporizador.isActive()  # it stopped on its own once empty
     assert panel.boton_procesar_todos.text() == "Procesar todos (con pausa)"
 
 
@@ -287,14 +287,14 @@ def test_ventana_principal_tiene_pestana_de_cola_y_sincroniza_eventos(app):
     ventana.panel_cola.refrescar()
     ventana.panel_cola._procesar_un_paso()
 
-    # el evento nuevo debe aparecer también en la pestaña de Eventos y en el árbol
+    # the new event must also appear on the Eventos tab and in the tree
     assert ventana.panel_eventos.tabla.rowCount() == 3
     from gui.vista_arbol import _NodoGrafico
     nodos_graficos = [item for item in ventana.vista_arbol.escena.items() if isinstance(item, _NodoGrafico)]
     assert len(nodos_graficos) == 3
 
 
-# ---------------- histórico, archivo y eliminación ----------------
+# ---------------- history, archive, and deletion ----------------
 
 def test_panel_historico_eliminar_evento_lo_retira_y_registra(app):
     from gui.panel_historico import PanelHistorico
@@ -317,15 +317,15 @@ def test_panel_historico_eliminar_id_inexistente_no_revienta(app):
     escenario = _escenario_con_datos()
     panel = PanelHistorico(escenario)
     panel.campo_id_eliminar.setValue(999)
-    panel._eliminar_evento()  # solo debe avisar, no lanzar
+    panel._eliminar_evento()  # it should only warn, not raise
 
-    assert escenario.catalogo.esta_activo(1)  # nada se tocó
+    assert escenario.catalogo.esta_activo(1)  # nothing was touched
 
 
 def test_panel_historico_archivar_rama_sin_elegibles(app):
     from gui.panel_historico import PanelHistorico
 
-    escenario = _escenario_con_datos()  # eventos recientes: nada es elegible
+    escenario = _escenario_con_datos()  # recent events: nothing is eligible
     panel = PanelHistorico(escenario)
     panel._archivar_rama()
 
@@ -339,7 +339,7 @@ def test_panel_historico_archivar_rama_elegible(app):
     zonas = [Zona("Z", 0.0, 1000.0, 0.0, 1000.0, poblada=False)]
     escenario = Escenario(zonas=zonas, reloj_simulacion=RELOJ)
     escenario.alta_evento(1, 2.0, 10.0, 500.0, 500.0,
-                           datetime(2026, 9, 1, 9, 0, 0), "EST-01")  # antiguo, prioridad baja
+                           datetime(2026, 9, 1, 9, 0, 0), "EST-01")  # old, low priority
 
     panel = PanelHistorico(escenario)
     panel._archivar_rama()
@@ -370,19 +370,19 @@ def test_ventana_principal_tiene_pestana_de_historico_y_sincroniza(app):
     ventana.panel_historico.campo_id_eliminar.setValue(2)
     ventana.panel_historico._eliminar_evento()
 
-    # debe desaparecer de la tabla de Eventos activos
+    # it must disappear from the active Eventos table
     assert ventana.panel_eventos.tabla.rowCount() == 1
     from gui.vista_arbol import _NodoGrafico
     nodos_graficos = [item for item in ventana.vista_arbol.escena.items() if isinstance(item, _NodoGrafico)]
     assert len(nodos_graficos) == 1
 
 
-# ---------------- deshacer visual y versiones ----------------
+# ---------------- visual undo and versions ----------------
 
 def test_panel_versiones_muestra_cantidad_de_acciones_pendientes(app):
     from gui.panel_versiones import PanelVersiones
 
-    escenario = _escenario_con_datos()  # 2 altas ya hechas
+    escenario = _escenario_con_datos()  # 2 registrations already done
     panel = PanelVersiones(escenario)
 
     assert "2" in panel.etiqueta_pila.text()
@@ -420,7 +420,7 @@ def test_panel_versiones_guardar_y_restaurar(app):
     panel._restaurar_version()
 
     evento_restaurado, _ = escenario.catalogo.consultar_evento(1)
-    assert evento_restaurado.magnitud == 6.0  # volvió al estado guardado
+    assert evento_restaurado.magnitud == 6.0  # it returned to the saved state
 
 
 def test_panel_versiones_guardar_sin_nombre_no_agrega(app):
@@ -439,7 +439,7 @@ def test_panel_versiones_restaurar_sin_seleccion_no_revienta(app):
 
     escenario = _escenario_con_datos()
     panel = PanelVersiones(escenario)
-    panel._restaurar_version()  # no hay nada seleccionado, no debe lanzar
+    panel._restaurar_version()  # nothing is selected, it must not raise
 
 
 def test_ventana_principal_tiene_pestana_de_versiones_y_sincroniza(app):
@@ -459,12 +459,12 @@ def test_ventana_principal_tiene_pestana_de_versiones_y_sincroniza(app):
     ventana.panel_versiones.lista_versiones.setCurrentRow(0)
     ventana.panel_versiones._restaurar_version()
 
-    # al restaurar la versión, el evento 1 vuelve a estar activo, y eso
-    # debe reflejarse también en la pestaña de Eventos
+    # when the version is restored, event 1 becomes active again, and that
+    # must also show up on the Eventos tab
     assert ventana.panel_eventos.tabla.rowCount() == 2
 
 
-# ---------------- persistencia ----------------
+# ---------------- persistence ----------------
 
 def test_panel_persistencia_guarda_un_archivo_real(app, tmp_path, monkeypatch):
     from gui.panel_persistencia import PanelPersistencia
@@ -498,10 +498,10 @@ def test_panel_persistencia_cargar_por_topologia_reemplaza_el_escenario(app, tmp
 
     escenario = _escenario_con_datos()
     panel = PanelPersistencia(escenario)
-    panel.cambio_realizado.connect(lambda: None)  # solo para confirmar que no revienta al emitir
+    panel.cambio_realizado.connect(lambda: None)  # only to confirm that emitting does not crash
     panel._cargar_por_topologia()
 
-    assert len(escenario.catalogo) == 3  # 1, 2 y 99 del archivo cargado
+    assert len(escenario.catalogo) == 3  # 1, 2, and 99 from the loaded file
     assert escenario.catalogo.esta_activo(99)
 
 
@@ -523,7 +523,7 @@ def test_panel_persistencia_cargar_por_topologia_invalido_no_modifica_nada(app, 
     panel = PanelPersistencia(escenario)
     panel._cargar_por_topologia()
 
-    assert len(escenario.catalogo) == 2  # no se tocó nada
+    assert len(escenario.catalogo) == 2  # nothing was touched
 
 
 def test_panel_persistencia_cargar_por_inserciones_muestra_comparacion(app, tmp_path, monkeypatch):
@@ -559,11 +559,11 @@ def test_panel_persistencia_cancelar_dialogo_no_hace_nada(app, monkeypatch):
     from PySide6 import QtWidgets
 
     monkeypatch.setattr(QtWidgets.QFileDialog, "getSaveFileName",
-                         staticmethod(lambda *a, **k: ("", "")))  # el usuario cancela
+                         staticmethod(lambda *a, **k: ("", "")))  # the user cancels
 
     escenario = _escenario_con_datos()
     panel = PanelPersistencia(escenario)
-    panel._guardar()  # no debe lanzar ni hacer nada
+    panel._guardar()  # it must not raise or do anything
 
 
 def test_ventana_principal_tiene_pestana_de_persistencia(app):
@@ -574,7 +574,7 @@ def test_ventana_principal_tiene_pestana_de_persistencia(app):
     assert ventana.pestanas.tabText(5) == "Persistencia"
 
 
-# ---------------- comparación AVL vs BST ----------------
+# ---------------- AVL vs BST comparison ----------------
 
 def test_panel_comparacion_sin_carga_previa_muestra_mensaje(app):
     from gui.panel_persistencia import PanelPersistencia
@@ -586,7 +586,7 @@ def test_panel_comparacion_sin_carga_previa_muestra_mensaje(app):
 
     assert panel.panel_persistencia.ultimo_bst_comparacion is None
     assert "AVL actual ->" in panel.etiqueta_resumen.text()
-    assert panel.escena_avl.items() != []  # el AVL actual sí se dibuja
+    assert panel.escena_avl.items() != []  # the current AVL is drawn
 
 
 def test_panel_comparacion_dibuja_avl_y_bst_tras_carga_por_inserciones(app, tmp_path, monkeypatch):
@@ -641,12 +641,12 @@ def test_ventana_principal_tiene_pestana_de_comparacion_y_se_actualiza_al_entrar
 
     ventana.panel_persistencia._cargar_por_inserciones()
 
-    # todavía no se cambió a esa pestaña: currentChanged se dispara al entrar
+    # that tab has not been selected yet: currentChanged fires on entry
     ventana.pestanas.setCurrentWidget(ventana.panel_comparacion)
     assert "Última carga por inserciones" in ventana.panel_comparacion.etiqueta_resumen.text()
 
 
-# ---------------- plano geográfico ----------------
+# ---------------- geographic map ----------------
 
 def test_panel_plano_dibuja_zonas_y_eventos(app):
     from gui.panel_plano import PanelPlano
@@ -660,7 +660,7 @@ def test_panel_plano_dibuja_zonas_y_eventos(app):
 
     from PySide6 import QtWidgets
     rectangulos = [item for item in panel.escena.items() if isinstance(item, QtWidgets.QGraphicsRectItem)]
-    # 1 marco del plano completo + 1 por cada zona (una zona en _escenario_con_datos)
+    # 1 frame of the full map + 1 per zone (one zone in _escenario_con_datos)
     assert len(rectangulos) >= 2
 
 
@@ -669,7 +669,7 @@ def test_panel_plano_sin_zonas_no_revienta(app):
 
     escenario = Escenario(zonas=[], reloj_simulacion=RELOJ)
     panel = PanelPlano(escenario)
-    assert panel.escena.items() != []  # al menos el marco del plano
+    assert panel.escena.items() != []  # at least the map frame
 
 
 def test_click_en_punto_emite_senal_con_el_identificador(app):

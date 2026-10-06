@@ -24,22 +24,22 @@ class ArbolAVL:
     def __init__(self):
         self.raiz = None
         self._cantidad = 0
-        # Métricas de la sección 14: casos atendidos y giros elementales.
-        # Un caso doble (LR o RL) cuenta como un caso de ese tipo y DOS
-        # giros elementales (uno a cada lado); un caso simple (LL o RR)
-        # cuenta como un caso de ese tipo y UN giro elemental.
+        # Section 14 metrics: cases handled and elementary rotations.
+        # A double case (LR or RL) counts as one case of that type and TWO
+        # elementary rotations (one each way); a single case (LL or RR)
+        # counts as one case of that type and ONE elementary rotation.
         self.contador_casos = {"LL": 0, "RR": 0, "LR": 0, "RL": 0}
         self.contador_giros_izquierda = 0
         self.contador_giros_derecha = 0
-        # Rotaciones de recuperar_equilibrio (Day-Stout-Warren): no
-        # encajan en la clasificación LL/RR/LR/RL, que es propia del
-        # rebalanceo tras una única inserción o eliminación.
+        # Rotations from recuperar_equilibrio (Day-Stout-Warren): they do
+        # not fit the LL/RR/LR/RL classification, which belongs to
+        # rebalancing after a single insertion or deletion.
         self.contador_rotaciones_recuperacion = 0
 
     def __len__(self):
         return self._cantidad
 
-    # ---------------- altura y balance ----------------
+    # ---------------- height and balance ----------------
 
     def _altura(self, nodo):
         return nodo.altura if nodo is not None else -1
@@ -53,7 +53,7 @@ class ArbolAVL:
         return self._altura(nodo.izquierdo) - self._altura(nodo.derecho)
 
     def esta_balanceado(self):
-        """True si TODOS los nodos tienen factor de balance en {-1, 0, 1}."""
+        """True if EVERY node has a balance factor in {-1, 0, 1}."""
         return all(fb in (-1, 0, 1) for fb in self._factores_balance())
 
     def _factores_balance(self):
@@ -68,7 +68,7 @@ class ArbolAVL:
         recorrer(self.raiz)
         return resultado
 
-    # ---------------- rotaciones ----------------
+    # ---------------- rotations ----------------
 
     def _rotacion_derecha(self, y):
         """Simple right rotation. `y` is the root of the unbalanced subtree."""
@@ -144,7 +144,7 @@ class ArbolAVL:
 
         return nodo
 
-    # ---------------- inserción ----------------
+    # ---------------- insertion ----------------
 
     def insertar(self, elemento, balancear=True):
         """Inserts a new element. If `balancear` is True (normal mode),
@@ -172,7 +172,7 @@ class ArbolAVL:
         self._actualizar_altura(actual)
         return actual
 
-    # ---------------- búsqueda ----------------
+    # ---------------- search ----------------
 
     def buscar_nodo(self, clave):
         """Returns (node, nodes_visited). node is None if it does not exist.
@@ -204,7 +204,7 @@ class ArbolAVL:
             prof += 1
         return None
 
-    # ---------------- eliminación ----------------
+    # ---------------- deletion ----------------
 
     def eliminar(self, clave, balancear=True):
         """Deletes the node with the given key. With `balancear=True`, it rebalances;
@@ -298,13 +298,13 @@ class ArbolAVL:
         self._arbol_a_vid(pseudo)
 
         n = self._cantidad
-        # m = tamaño del árbol completo más grande que cabe en n nodos (2^k - 1)
+        # m = size of the largest complete tree that fits in n nodes (2^k - 1)
         m = 1
         while (m * 2) - 1 <= n:
             m *= 2
         m -= 1
 
-        self._comprimir(pseudo, n - m)  # aplana los nodos sobrantes primero
+        self._comprimir(pseudo, n - m)  # flatten the leftover nodes first
         resto = m
         while resto > 1:
             resto //= 2
@@ -357,7 +357,7 @@ class ArbolAVL:
         nodo.altura = 1 + max(altura_izquierda, altura_derecha)
         return nodo.altura
 
-    # ---------------- recorridos ----------------
+    # ---------------- traversals ----------------
 
     def recorrido_inorden(self):
         resultado = []
@@ -424,7 +424,7 @@ class ArbolAVL:
             return 1
         return self._contar_hojas_nodo(nodo.izquierdo) + self._contar_hojas_nodo(nodo.derecho)
 
-    # ---------------- subárboles elegibles (sección 10, archivo) ----------------
+    # ---------------- eligible subtrees (section 10, archiving) ----------------
 
     def subarboles_elegibles(self, criterio):
         """

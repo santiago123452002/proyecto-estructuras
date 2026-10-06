@@ -166,7 +166,7 @@ def test_carga_por_topologia_rechaza_desbalance_en_modo_normal():
         construir_escenario_desde_topologia(datos)
 
     datos["modo"] = "estres"
-    reconstruido = construir_escenario_desde_topologia(datos)  # ahora sí se acepta
+    reconstruido = construir_escenario_desde_topologia(datos)  # now it is accepted
     assert len(reconstruido.catalogo) == 3
     assert reconstruido.catalogo.esta_balanceado() is False
 
@@ -221,12 +221,12 @@ def test_escenario_cargar_por_topologia_conserva_el_anterior_si_falla():
 
     datos_corruptos = dict(datos_validos)
     datos_corruptos["arbol_activo"] = dict(datos_validos["arbol_activo"])
-    datos_corruptos["arbol_activo"]["altura"] = 999  # inválido
+    datos_corruptos["arbol_activo"]["altura"] = 999  # invalid
 
     with pytest.raises(ValidacionError):
         otro.cargar_por_topologia(datos_corruptos)
 
-    assert len(otro.catalogo) == cantidad_antes  # no se tocó nada
+    assert len(otro.catalogo) == cantidad_antes  # nothing was touched
     assert otro.catalogo.esta_activo(999)
 
 
@@ -235,7 +235,7 @@ def test_escenario_cargar_por_topologia_reemplaza_y_es_deshacible():
     escenario.alta_evento(999, 6.0, 10.0, 500.0, 500.0, datetime(2026, 9, 10, 9, 0, 0), "EST-03")
     cantidad_original = len(escenario.catalogo)
 
-    otro = _escenario_con_datos()  # 3 eventos, distintos identificadores
+    otro = _escenario_con_datos()  # 3 events, distinct identifiers
     datos_otro = exportar_escenario(otro)
 
     escenario.cargar_por_topologia(datos_otro)
