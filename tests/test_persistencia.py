@@ -80,6 +80,14 @@ def test_exportar_e_importar_reproduce_el_mismo_escenario():
     assert evento_reconstruido.clave == evento_original.clave
     assert evento_reconstruido.magnitud == evento_original.magnitud
     assert evento_reconstruido.estaciones == evento_original.estaciones
+    assert reconstruido.catalogo.metricas["eliminaciones"] == original.catalogo.metricas["eliminaciones"]
+
+    original.guardar_version("antes")
+    datos_con_version = exportar_escenario(original)
+    restaurado = construir_escenario_desde_topologia(json.loads(json.dumps(datos_con_version)))
+    assert restaurado.listar_versiones() == ["antes"]
+    restaurado.restaurar_version("antes")
+    assert restaurado.catalogo.esta_eliminado(101)
 
 
 def test_exportar_incluye_cola_en_orden_original():

@@ -136,9 +136,13 @@ class PanelPersistencia(QtWidgets.QWidget):
 
         texto = (
             f"AVL -> raíz: {resumen['avl']['raiz']}, altura: {resumen['avl']['altura']}, "
-            f"hojas: {resumen['avl']['hojas']}, nodos: {resumen['avl']['cantidad']}\n"
+            f"profundidad máxima: {resumen['avl']['profundidad_maxima']}, "
+            f"hojas: {resumen['avl']['hojas']}, nodos: {resumen['avl']['cantidad']}, "
+            f"comparaciones: {resumen['avl']['comparaciones']}\n"
             f"BST -> raíz: {resumen['bst']['raiz']}, altura: {resumen['bst']['altura']}, "
-            f"hojas: {resumen['bst']['hojas']}, nodos: {resumen['bst']['cantidad']}"
+            f"profundidad máxima: {resumen['bst']['profundidad_maxima']}, "
+            f"hojas: {resumen['bst']['hojas']}, nodos: {resumen['bst']['cantidad']}, "
+            f"comparaciones: {resumen['bst']['comparaciones']}"
         )
         self.texto_comparacion.setPlainText(texto)
         self.cambio_realizado.emit()

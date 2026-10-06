@@ -60,6 +60,7 @@ class VistaArbolAVL(QtWidgets.QWidget):
     def __init__(self, escenario, parent=None):
         super().__init__(parent)
         self.escenario = escenario
+        self.al_pausar_cola = None
 
         layout = QtWidgets.QVBoxLayout(self)
 
@@ -75,6 +76,10 @@ class VistaArbolAVL(QtWidgets.QWidget):
         boton_verificar = QtWidgets.QPushButton("Verificar estructura")
         boton_verificar.clicked.connect(self._verificar_estructura)
         fila_superior.addWidget(boton_verificar)
+
+        boton_indicadores = QtWidgets.QPushButton("Indicadores")
+        boton_indicadores.clicked.connect(self._mostrar_indicadores)
+        fila_superior.addWidget(boton_indicadores)
 
         layout.addLayout(fila_superior)
 
@@ -171,13 +176,52 @@ class VistaArbolAVL(QtWidgets.QWidget):
         self.nodo_seleccionado.emit(identificador)
 
     def _recuperar_equilibrio(self):
+        if self.al_pausar_cola is not None:
+            self.al_pausar_cola()
+        avl = self.escenario.catalogo.avl
+        giros_antes = avl.contador_rotaciones_recuperacion
         balanceado = self.escenario.recuperar_equilibrio()
+        giros = avl.contador_rotaciones_recuperacion - giros_antes
         self.refrescar()
+        estado = "El árbol quedó balanceado." if balanceado else "El árbol sigue sin balancear."
         QtWidgets.QMessageBox.information(
             self, "Recuperar equilibrio",
-            "El árbol quedó balanceado." if balanceado
-            else "El árbol sigue sin balancear (revisa 'Verificar estructura').",
+            f"Se pausó el procesamiento de la cola.\n"
+            f"Giros de recuperación aplicados: {giros}.\n"
+            f"{estado}",
         )
+
+    def _mostrar_indicadores(self):
+        ind = self.escenario.generar_indicadores()
+        rotaciones = ind["rotaciones"]
+        texto = "\n".join([
+            f"Activos: {ind['eventos_activos']}    Históricos: {ind['eventos_historicos']}",
+            f"Archivados: {ind['eventos_archivados']}    Eliminados: {ind['eventos_eliminados']}",
+            f"Altura: {ind['altura']}    Hojas: {ind['hojas']}",
+            f"Inorden: {ind['recorrido_inorden']}",
+            f"Preorden: {ind['recorrido_preorden']}",
+            f"Postorden: {ind['recorrido_postorden']}",
+            f"Por niveles: {ind['recorrido_por_niveles']}",
+            f"Correcciones aceptadas: {ind['correcciones_aceptadas']}",
+            f"Reportes descartados: {ind['reportes_descartados']}    Conflictos: {ind['conflictos']}",
+            f"Archivos masivos: {ind['archivos_masivos']}    Eventos archivados (total): {ind['eventos_archivados_total']}",
+            f"LL={rotaciones['LL']}  RR={rotaciones['RR']}  LR={rotaciones['LR']}  RL={rotaciones['RL']}",
+            f"Giros izquierda: {ind['giros_izquierda']}    Giros derecha: {ind['giros_derecha']}",
+            f"Por prioridad: {ind['eventos_por_prioridad']}",
+            f"Pendientes de atención: {ind['pendientes_de_atencion']}",
+            f"Acceso costoso: {ind['eventos_con_acceso_costoso']}",
+        ])
+        dialogo = QtWidgets.QDialog(self)
+        dialogo.setWindowTitle("Indicadores")
+        dialogo.resize(640, 420)
+        layout = QtWidgets.QVBoxLayout(dialogo)
+        texto_widget = QtWidgets.QPlainTextEdit(texto)
+        texto_widget.setReadOnly(True)
+        layout.addWidget(texto_widget)
+        boton = QtWidgets.QPushButton("Cerrar")
+        boton.clicked.connect(dialogo.accept)
+        layout.addWidget(boton)
+        dialogo.exec()
 
     def _verificar_estructura(self):
         reporte = self.escenario.catalogo.verificar_estructura(modo=self.escenario.modo)

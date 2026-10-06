@@ -12,6 +12,7 @@ from .panel_versiones import PanelVersiones
 from .panel_persistencia import PanelPersistencia
 from .panel_comparacion_bst import PanelComparacionBST
 from .panel_plano import PanelPlano
+from .panel_consultas import PanelConsultas
 
 
 class VentanaPrincipal(QtWidgets.QMainWindow):
@@ -65,6 +66,11 @@ class VentanaPrincipal(QtWidgets.QMainWindow):
         self.panel_plano.evento_seleccionado.connect(self._seleccionar_evento_desde_otra_vista)
         self.pestanas.addTab(self.panel_plano, "Plano geográfico")
 
+        self.panel_consultas = PanelConsultas(self.escenario)
+        self.pestanas.addTab(self.panel_consultas, "Consultas")
+
+        self.vista_arbol.al_pausar_cola = self.panel_cola._detener_procesamiento_continuo
+
         self.pestanas.currentChanged.connect(self._al_cambiar_pestana)
 
         self._actualizar_barra_estado()
@@ -115,6 +121,7 @@ class VentanaPrincipal(QtWidgets.QMainWindow):
         self.panel_persistencia.refrescar()
         self.panel_comparacion.refrescar()
         self.panel_plano.refrescar()
+        self.panel_consultas.refrescar()
         self._actualizar_barra_estado()
 
     def _al_cambiar_pestana(self, indice):
@@ -199,9 +206,8 @@ class VentanaPrincipal(QtWidgets.QMainWindow):
             "Vas a pasar a modo ESTRÉS: las próximas altas/correcciones/eliminaciones\n"
             "conservarán el orden pero NO se rebalancearán automáticamente."
             if nuevo_modo == "estres" else
-            "Vas a volver a modo NORMAL: las próximas operaciones se rebalancearán\n"
-            "automáticamente de nuevo. El árbol actual puede seguir desbalanceado\n"
-            "hasta que uses 'Recuperar equilibrio'."
+            "Vas a volver a modo NORMAL. Solo se completa si la auditoría ya confirma\n"
+            "que el árbol está balanceado; si no, use 'Recuperar equilibrio' primero."
         )
         respuesta = QtWidgets.QMessageBox.question(self, "Cambiar de modo", mensaje)
         if respuesta != QtWidgets.QMessageBox.Yes:

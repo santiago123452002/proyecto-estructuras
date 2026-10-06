@@ -173,6 +173,14 @@ class Escenario:
     def configurar_t_horas(self, t_horas):
         return self._ejecutar_con_deshacer(self.catalogo.configurar_t_horas, t_horas)
 
+    def configurar_w_r_l(self, w_horas, r_km, l_profundidad):
+        """One undoable action for W, R and L (sections 7 and 9)."""
+        def _aplicar():
+            self.catalogo.configurar_asociaciones(w_horas, r_km)
+            self.catalogo.configurar_l_profundidad(l_profundidad)
+
+        return self._ejecutar_con_deshacer(_aplicar)
+
     def avanzar_reloj(self, nuevo_reloj):
         def _avanzar():
             if nuevo_reloj < self.reloj_simulacion:
@@ -185,6 +193,11 @@ class Escenario:
         def _cambiar():
             if nuevo_modo not in ("normal", "estres"):
                 raise ValidacionError("El modo debe ser 'normal' o 'estres'.")
+            if nuevo_modo == "normal" and not self.catalogo.esta_balanceado():
+                raise ValidacionError(
+                    "No se puede volver a modo normal: la auditoría no confirma el equilibrio. "
+                    "Use 'Recuperar equilibrio' primero."
+                )
             self.modo = nuevo_modo
 
         return self._ejecutar_con_deshacer(_cambiar)

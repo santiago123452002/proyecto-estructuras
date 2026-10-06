@@ -84,6 +84,16 @@ class PanelEventos(QtWidgets.QWidget):
 
         grupo_detalle = QtWidgets.QGroupBox("Detalle del evento seleccionado")
         layout_detalle = QtWidgets.QVBoxLayout(grupo_detalle)
+
+        fila_consulta = QtWidgets.QHBoxLayout()
+        self.campo_consulta_id = QtWidgets.QSpinBox()
+        self.campo_consulta_id.setRange(1, 999999)
+        boton_consultar = QtWidgets.QPushButton("Consultar identificador")
+        boton_consultar.clicked.connect(self._consultar_identificador)
+        fila_consulta.addWidget(self.campo_consulta_id)
+        fila_consulta.addWidget(boton_consultar)
+        layout_detalle.addLayout(fila_consulta)
+
         self.texto_detalle = QtWidgets.QPlainTextEdit()
         self.texto_detalle.setReadOnly(True)
         layout_detalle.addWidget(self.texto_detalle)
@@ -281,6 +291,29 @@ class PanelEventos(QtWidgets.QWidget):
         self.refrescar()
         self.cambio_realizado.emit()
 
+    def _consultar_identificador(self):
+        identificador = self.campo_consulta_id.value()
+        estado, evento = self.escenario.catalogo.ubicar_identificador(identificador)
+        if estado == "activo":
+            self.seleccionar_por_identificador(identificador)
+            self._actualizar_detalle()
+            return
+        if estado == "desconocido":
+            self.texto_detalle.setPlainText(
+                f"El identificador {identificador} no corresponde a ningún evento."
+            )
+            return
+        self.tabla.clearSelection()
+        self._identificador_seleccionado = None
+        self.boton_marcar_revisado.setEnabled(False)
+        self.texto_detalle.setPlainText(
+            f"Identificador: {evento.identificador}\n"
+            f"Estado: {estado}\n"
+            f"Magnitud: {evento.magnitud}    Profundidad: {evento.profundidad} km\n"
+            f"Prioridad: {evento.prioridad}    Revisión: {evento.revision}\n"
+            f"Fecha: {evento.fecha_hora}"
+        )
+
     def _marcar_revisado_seleccionado(self):
         if self._identificador_seleccionado is None:
             return
@@ -290,3 +323,4 @@ class PanelEventos(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "No se pudo marcar como revisado", str(error))
             return
         self.refrescar()
+        self.cambio_realizado.emit()

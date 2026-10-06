@@ -134,6 +134,17 @@ class Catalogo:
         _, visitados = self.avl.buscar_nodo(nodo.clave)
         return nodo.elemento, visitados
 
+    def ubicar_identificador(self, identificador):
+        """Returns (estado, evento). estado is activo, archivado, eliminado or desconocido.
+        Section 6 requires the lookup to say which of those applies."""
+        if self.esta_activo(identificador):
+            return "activo", self._indice_por_id[identificador].elemento
+        if self.esta_archivado(identificador):
+            return "archivado", self._archivados[identificador]
+        if self.esta_eliminado(identificador):
+            return "eliminado", self._eliminados[identificador]
+        return "desconocido", None
+
     # ---------------- manual correction (section 6) ----------------
 
     def corregir_evento(self, identificador, zonas, reloj_simulacion, **cambios):
@@ -244,26 +255,15 @@ class Catalogo:
         Returns the list of archived identifiers, or [] if there is no
         eligible branch (in that case, nothing is modified).
         """
-        def es_elegible(evento):
-            antiguedad_horas = (reloj_simulacion - evento.fecha_hora).total_seconds() / 3600.0
-            return evento.prioridad == 1 and antiguedad_horas > self.t_horas
-
-        candidatas = self.avl.subarboles_elegibles(es_elegible)
-        if not candidatas:
+        seleccion = self.seleccionar_rama_antigua(reloj_simulacion)
+        if seleccion is None:
             return []
 
-        nodo_raiz, _cantidad, _profundidad = max(
-            candidatas,
-            key=lambda c: (c[1], c[2], c[0].elemento.identificador),
-        )
-
-        eventos_afectados = self._eventos_del_subarbol(nodo_raiz)
-        identificadores_afectados = [e.identificador for e in eventos_afectados]
-
-        for evento in eventos_afectados:
+        for identificador in seleccion["identificadores"]:
+            evento = self._indice_por_id[identificador].elemento
             self.avl.eliminar(evento.clave, balancear=balancear)
-            del self._indice_por_id[evento.identificador]
-            self._archivados[evento.identificador] = evento
+            del self._indice_por_id[identificador]
+            self._archivados[identificador] = evento
 
         # DO NOT call _recalcular_todas_las_asociaciones() or modify
         # self._asociaciones here: section 7 is explicit ("simple
@@ -273,8 +273,31 @@ class Catalogo:
         # history preserves its associations for querying (section 10)
         # -- so archiving has nothing to recalculate or delete.
         self.metricas["archivos_masivos"] += 1
-        self.metricas["eventos_archivados_total"] += len(identificadores_afectados)
-        return identificadores_afectados
+        self.metricas["eventos_archivados_total"] += len(seleccion["identificadores"])
+        return seleccion["identificadores"]
+
+    def seleccionar_rama_antigua(self, reloj_simulacion):
+        """Eligible branch that archivar_rama_antigua would move, or None.
+        Does not modify the tree, so the interface can show the set first."""
+        def es_elegible(evento):
+            antiguedad_horas = (reloj_simulacion - evento.fecha_hora).total_seconds() / 3600.0
+            return evento.prioridad == 1 and antiguedad_horas > self.t_horas
+
+        candidatas = self.avl.subarboles_elegibles(es_elegible)
+        if not candidatas:
+            return None
+
+        nodo_raiz, cantidad, profundidad = max(
+            candidatas,
+            key=lambda c: (c[1], c[2], c[0].elemento.identificador),
+        )
+        identificadores = [e.identificador for e in self._eventos_del_subarbol(nodo_raiz)]
+        return {
+            "identificadores": identificadores,
+            "cantidad": cantidad,
+            "profundidad_raiz": profundidad,
+            "id_raiz": nodo_raiz.elemento.identificador,
+        }
 
     @staticmethod
     def _eventos_del_subarbol(nodo):

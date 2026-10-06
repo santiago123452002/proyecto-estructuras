@@ -76,6 +76,8 @@ class PanelComparacionBST(QtWidgets.QWidget):
 
         self.etiqueta_resumen.setText(
             f"Última carga por inserciones ({resumen['avl']['cantidad']} eventos) -> "
-            f"AVL: altura {resumen['avl']['altura']}, hojas {resumen['avl']['hojas']}   |   "
-            f"BST: altura {resumen['bst']['altura']}, hojas {resumen['bst']['hojas']}"
+            f"AVL: altura {resumen['avl']['altura']}, profundidad máxima {resumen['avl']['profundidad_maxima']}, "
+            f"hojas {resumen['avl']['hojas']}, comparaciones {resumen['avl']['comparaciones']}   |   "
+            f"BST: altura {resumen['bst']['altura']}, profundidad máxima {resumen['bst']['profundidad_maxima']}, "
+            f"hojas {resumen['bst']['hojas']}, comparaciones {resumen['bst']['comparaciones']}"
         )

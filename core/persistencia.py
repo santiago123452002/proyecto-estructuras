@@ -27,26 +27,13 @@ from .serializacion import (
 
 # ---------------- structural saving (complete export) ----------------
 
-def exportar_escenario(escenario):
-    """
-    "Structural saving" (section 12): actual topology of the active tree
-    (current data, heights, balance factors, attention status), complete
-    history, queue in its original order, clock, zones, W/R/T parameters,
-    execution mode, and accumulated metrics.
-
-    Associations are NOT saved explicitly: they are always rebuilt
-    using the same deterministic policy when loading. The statement
-    allows either option ("the team may save the associations or rebuild
-    them... in both cases the same logical result must be recovered"), and
-    rebuilding avoids having to separately validate that the saved data
-    remains consistent with the current data.
-    """
-    catalogo = escenario.catalogo
+def _exportar_operativo(catalogo, cola, zonas, reloj_simulacion, modo, metricas):
+    """Operating state shared by the live scenario and each named version."""
     avl = catalogo.avl
     return {
-        "zonas": [zona_a_dict(z) for z in escenario.zonas],
-        "reloj_simulacion": fecha_a_texto(escenario.reloj_simulacion),
-        "modo": escenario.modo,
+        "zonas": [zona_a_dict(z) for z in zonas],
+        "reloj_simulacion": fecha_a_texto(reloj_simulacion),
+        "modo": modo,
         "parametros": {
             "w_horas": catalogo.w_horas,
             "r_km": catalogo.r_km,
@@ -54,7 +41,12 @@ def exportar_escenario(escenario):
             "l_profundidad": catalogo.l_profundidad,
         },
         "metricas": {
-            "reportes_procesados": escenario.metricas.get("reportes_procesados", 0),
+            "reportes_procesados": metricas.get("reportes_procesados", 0),
+            "correcciones_aceptadas": metricas.get("correcciones_aceptadas", 0),
+            "reportes_descartados": metricas.get("reportes_descartados", 0),
+            "conflictos": metricas.get("conflictos", 0),
+            "archivos_masivos": metricas.get("archivos_masivos", 0),
+            "catalogo": dict(catalogo.metricas),
             "rotaciones": dict(avl.contador_casos),
             "giros_izquierda": avl.contador_giros_izquierda,
             "giros_derecha": avl.contador_giros_derecha,
@@ -65,8 +57,38 @@ def exportar_escenario(escenario):
             "archivados": [evento_a_dict(e) for e in catalogo._archivados.values()],
             "eliminados": [evento_a_dict(e) for e in catalogo._eliminados.values()],
         },
-        "cola": [reporte_a_dict(r) for r in escenario.cola.ver_orden()],
+        "cola": [reporte_a_dict(r) for r in cola.ver_orden()],
     }
+
+
+def exportar_escenario(escenario):
+    """
+    "Structural saving" (section 12): actual topology of the active tree
+    (current data, heights, balance factors, attention status), complete
+    history, queue in its original order, clock, zones, W/R/T/L parameters,
+    execution mode, and accumulated metrics. Named versions are included
+    so they survive closing the program (section 13); each version stores
+    the same operating state and not the undo stack or other versions.
+
+    Associations are NOT saved explicitly: they are always rebuilt
+    using the same deterministic policy when loading. The statement
+    allows either option ("the team may save the associations or rebuild
+    them... in both cases the same logical result must be recovered"), and
+    rebuilding avoids having to separately validate that the saved data
+    remains consistent with the current data.
+    """
+    datos = _exportar_operativo(
+        escenario.catalogo, escenario.cola, escenario.zonas,
+        escenario.reloj_simulacion, escenario.modo, escenario.metricas,
+    )
+    datos["versiones"] = {
+        nombre: _exportar_operativo(
+            estado["catalogo"], estado["cola"], estado["zonas"],
+            estado["reloj_simulacion"], estado["modo"], estado["metricas"],
+        )
+        for nombre, estado in escenario.versiones.items()
+    }
+    return datos
 
 
 # ---------------- topology-based loading ----------------
@@ -126,7 +148,7 @@ def _validar_topologia_reconstruida(raiz, modo):
     return identificadores
 
 
-def construir_escenario_desde_topologia(datos):
+def construir_escenario_desde_topologia(datos, cargar_versiones=True):
     """
     "Topology-based loading" (section 12). Rebuilds the ENTIRE scenario
     from an already parsed dict. It only uses LOCAL variables until
@@ -203,6 +225,9 @@ def construir_escenario_desde_topologia(datos):
     catalogo.r_km = r_km
     catalogo.t_horas = t_horas
     catalogo.l_profundidad = l_profundidad
+    for clave in catalogo.metricas:
+        if clave in metricas_json.get("catalogo", {}):
+            catalogo.metricas[clave] = metricas_json["catalogo"][clave]
     catalogo._recalcular_todas_las_asociaciones()
 
     cola = ColaReportes()
@@ -214,7 +239,15 @@ def construir_escenario_desde_topologia(datos):
     nuevo.catalogo = catalogo
     nuevo.cola = cola
     nuevo.modo = modo
-    nuevo.metricas = {"reportes_procesados": metricas_json.get("reportes_procesados", 0)}
+    for clave in nuevo.metricas:
+        if clave in metricas_json:
+            nuevo.metricas[clave] = metricas_json[clave]
+    if cargar_versiones:
+        versiones = {}
+        for nombre, datos_version in datos.get("versiones", {}).items():
+            temporal = construir_escenario_desde_topologia(datos_version, cargar_versiones=False)
+            versiones[nombre] = temporal._capturar_estado()
+        nuevo.versiones = versiones
     return nuevo
 
 
@@ -246,18 +279,30 @@ def construir_arboles_por_insercion(eventos_json, zonas):
         avl.insertar(dict_a_evento(datos_evento, zonas))
         bst.insertar(dict_a_evento(datos_evento, zonas))
 
+    comparaciones_avl = 0
+    comparaciones_bst = 0
+    for evento in avl.recorrido_inorden():
+        _, visitas_avl = avl.buscar_nodo(evento.clave)
+        _, visitas_bst = bst.buscar_nodo(evento.clave)
+        comparaciones_avl += visitas_avl
+        comparaciones_bst += visitas_bst
+
     resumen = {
         "avl": {
             "raiz": avl.raiz.clave if avl.raiz is not None else None,
             "altura": avl.altura_total(),
+            "profundidad_maxima": avl.altura_total(),
             "hojas": avl.contar_hojas(),
             "cantidad": len(avl),
+            "comparaciones": comparaciones_avl,
         },
         "bst": {
             "raiz": bst.raiz.clave if bst.raiz is not None else None,
             "altura": bst.altura(),
+            "profundidad_maxima": bst.altura(),
             "hojas": bst.contar_hojas(),
             "cantidad": len(bst),
+            "comparaciones": comparaciones_bst,
         },
     }
     return avl, bst, resumen

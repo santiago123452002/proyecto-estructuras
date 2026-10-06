@@ -52,6 +52,20 @@ class PanelHistorico(QtWidgets.QWidget):
         boton_configurar_t.clicked.connect(self._configurar_t)
         layout_archivo.addRow(boton_configurar_t)
 
+        self.campo_w = QtWidgets.QDoubleSpinBox()
+        self.campo_r = QtWidgets.QDoubleSpinBox()
+        for campo in (self.campo_w, self.campo_r):
+            campo.setRange(0.1, 100000.0)
+            campo.setDecimals(1)
+        self.campo_l = QtWidgets.QSpinBox()
+        self.campo_l.setRange(0, 100000)
+        layout_archivo.addRow("W (horas):", self.campo_w)
+        layout_archivo.addRow("R (km):", self.campo_r)
+        layout_archivo.addRow("L (profundidad):", self.campo_l)
+        boton_wrl = QtWidgets.QPushButton("Aplicar W, R y L")
+        boton_wrl.clicked.connect(self._configurar_w_r_l)
+        layout_archivo.addRow(boton_wrl)
+
         boton_archivar = QtWidgets.QPushButton("Archivar rama elegible")
         boton_archivar.clicked.connect(self._archivar_rama)
         layout_archivo.addRow(boton_archivar)
@@ -96,6 +110,9 @@ class PanelHistorico(QtWidgets.QWidget):
         self.campo_t_horas.blockSignals(True)
         self.campo_t_horas.setValue(catalogo.t_horas)
         self.campo_t_horas.blockSignals(False)
+        self.campo_w.setValue(catalogo.w_horas)
+        self.campo_r.setValue(catalogo.r_km)
+        self.campo_l.setValue(catalogo.l_profundidad)
 
         filas = [(evento, "archivado") for evento in catalogo._archivados.values()]
         filas += [(evento, "eliminado") for evento in catalogo._eliminados.values()]
@@ -145,18 +162,43 @@ class PanelHistorico(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "T inválido", str(error))
             return
         self.refrescar()
+        self.cambio_realizado.emit()
+
+    def _configurar_w_r_l(self):
+        try:
+            self.escenario.configurar_w_r_l(
+                self.campo_w.value(), self.campo_r.value(), self.campo_l.value(),
+            )
+        except ValidacionError as error:
+            QtWidgets.QMessageBox.warning(self, "Parámetro inválido", str(error))
+            return
+        self.refrescar()
+        self.cambio_realizado.emit()
 
     def _archivar_rama(self):
-        archivados = self.escenario.archivar_rama_antigua()
-        if not archivados:
+        seleccion = self.escenario.catalogo.seleccionar_rama_antigua(self.escenario.reloj_simulacion)
+        if seleccion is None:
             self.texto_resultado_archivo.setPlainText(
                 "No hay ninguna rama elegible en este momento (todos los eventos activos "
                 "son de prioridad media/alta, o no tienen suficiente antigüedad)."
             )
-        else:
-            self.texto_resultado_archivo.setPlainText(
-                f"Se archivaron {len(archivados)} evento(s): "
-                f"{', '.join(str(i) for i in archivados)}"
-            )
+            return
+
+        identificadores = ", ".join(str(i) for i in seleccion["identificadores"])
+        respuesta = QtWidgets.QMessageBox.question(
+            self, "Confirmar archivo",
+            f"Se archivarán {seleccion['cantidad']} evento(s): {identificadores}.\n"
+            f"Criterio: mayor cantidad de nodos ({seleccion['cantidad']}); "
+            f"en empate, mayor profundidad de la raíz ({seleccion['profundidad_raiz']}); "
+            f"si persiste, mayor identificador de la raíz ({seleccion['id_raiz']}).\n\n"
+            "¿Archivar esta rama?",
+        )
+        if respuesta != QtWidgets.QMessageBox.Yes:
+            return
+
+        archivados = self.escenario.archivar_rama_antigua()
+        self.texto_resultado_archivo.setPlainText(
+            f"Se archivaron {len(archivados)} evento(s): {', '.join(str(i) for i in archivados)}"
+        )
         self.refrescar()
         self.cambio_realizado.emit()
