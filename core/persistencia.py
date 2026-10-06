@@ -1,12 +1,12 @@
 """
-Persistencia en JSON (sección 12): guardado estructural completo, carga
-por topología (reconstruye el árbol tal cual, con toda su validación) y
-carga por inserciones (compara AVL vs BST con la misma secuencia).
+JSON persistence (section 12): complete structural saving, topology-based
+loading (rebuilds the tree exactly as it was, with full validation), and
+insertion-based loading (compares AVL vs BST using the same sequence).
 
-Este módulo NO importa `Escenario` a nivel de módulo -- lo hace de forma
-diferida, dentro de la función que lo necesita -- porque `escenario.py`
-importa de aquí (`from .persistencia import ...`) para sus métodos de
-carga/guardado; importarlo arriba crearía un ciclo de importación.
+This module does NOT import `Escenario` at module level -- it does so
+lazily, inside the function that needs it -- because `escenario.py`
+imports from here (`from .persistencia import ...`) for its loading/saving
+methods; importing it above would create an import cycle.
 """
 
 import json
@@ -25,21 +25,21 @@ from .serializacion import (
 )
 
 
-# ---------------- guardado estructural (exportación completa) ----------------
+# ---------------- structural saving (complete export) ----------------
 
 def exportar_escenario(escenario):
     """
-    "Guardado estructural" (sección 12): topología real del árbol
-    activo (datos vigentes, alturas, factores de balance, estado de
-    atención), histórico completo, cola en su orden original, reloj,
-    zonas, parámetros W/R/T, modo de ejecución y métricas acumuladas.
+    "Structural saving" (section 12): actual topology of the active tree
+    (current data, heights, balance factors, attention status), complete
+    history, queue in its original order, clock, zones, W/R/T parameters,
+    execution mode, and accumulated metrics.
 
-    Las asociaciones NO se guardan explícitas: se reconstruyen siempre
-    con la misma política determinista al cargar. El enunciado permite
-    cualquiera de las dos opciones ("el equipo puede guardar las
-    asociaciones o reconstruirlas... en ambos casos debe recuperar el
-    mismo resultado lógico") y reconstruirlas evita tener que validar
-    aparte que lo guardado siga siendo consistente con los datos.
+    Associations are NOT saved explicitly: they are always rebuilt
+    using the same deterministic policy when loading. The statement
+    allows either option ("the team may save the associations or rebuild
+    them... in both cases the same logical result must be recovered"), and
+    rebuilding avoids having to separately validate that the saved data
+    remains consistent with the current data.
     """
     catalogo = escenario.catalogo
     avl = catalogo.avl
@@ -69,28 +69,27 @@ def exportar_escenario(escenario):
     }
 
 
-# ---------------- carga por topología ----------------
-
+# ---------------- topology-based loading ----------------
 def _validar_topologia_reconstruida(raiz, modo):
     """
-    Recorre la topología YA reconstruida (con dict_a_nodo, que ya validó
-    altura/factor por nodo y la prioridad de cada evento) y valida lo
-    que solo se puede comprobar viendo el árbol completo:
+    Traverses the ALREADY reconstructed topology (with dict_a_nodo, which
+    has already validated height/balance factor per node and the priority
+    of each event) and validates what can only be checked by looking at
+    the complete tree:
 
-    - Orden global BST por K: el recorrido inorden debe salir
-      estrictamente ascendente. Esto de paso descarta ciclos -- un
-      ciclo en los punteros izquierdo/derecho produciría una recursión
-      infinita en vez de una lista, así que si `recorrer` termina, no
-      hay ciclos (y una recursión infinita real es imposible aquí de
-      todos modos: el propio texto JSON es un árbol de objetos anidados
-      sin referencias compartidas, así que no hay forma de codificar un
-      ciclo en el archivo de entrada).
-    - Unicidad de identificadores dentro del árbol activo.
-    - Que el balance real sea compatible con el modo declarado: en modo
-      normal TODO nodo debe tener factor de balance en {-1, 0, 1}; en
-      modo estrés se acepta cualquier balance (puede estar degradado).
+    - Global BST ordering by K: the inorder traversal must be
+    strictly ascending. This also rules out cycles -- a cycle in the
+    left/right pointers would cause infinite recursion instead of a list,
+    so if `recorrer` finishes, there are no cycles (and a real infinite
+    recursion is impossible here anyway: the JSON text itself is a tree
+    of nested objects without shared references, so there is no way to
+    encode a cycle in the input file).
+    - Identifier uniqueness within the active tree.
+    - That the actual balance is compatible with the declared mode: in
+    normal mode EVERY node must have a balance factor in {-1, 0, 1};
+    in stress mode any balance is accepted (the tree may be degraded).
 
-    Devuelve el conjunto de identificadores del árbol activo.
+    Returns the set of identifiers from the active tree.
     """
     identificadores = set()
     claves = []
@@ -129,12 +128,12 @@ def _validar_topologia_reconstruida(raiz, modo):
 
 def construir_escenario_desde_topologia(datos):
     """
-    "Carga por topología" (sección 12). Reconstruye TODO el escenario a
-    partir de un dict ya parseado. Solo usa variables LOCALES hasta que
-    toda la validación pasa -- así, si algo falla a mitad de camino,
-    quien llama nunca recibe un escenario a medio construir, lo que le
-    permite a `Escenario.cargar_por_topologia` conservar el escenario
-    anterior ante un archivo inválido, tal como exige el enunciado.
+    "Topology-based loading" (section 12). Rebuilds the ENTIRE scenario
+    from an already parsed dict. It only uses LOCAL variables until
+    all validation passes -- therefore, if something fails halfway through,
+    the caller never receives a partially built scenario, allowing
+    `Escenario.cargar_por_topologia` to preserve the previous scenario
+    when given an invalid file, as required by the statement.
     """
     zonas = [dict_a_zona(z) for z in datos.get("zonas", [])]
     reloj_simulacion = texto_a_fecha(datos["reloj_simulacion"])
@@ -223,15 +222,15 @@ def construir_escenario_desde_topologia(datos):
 
 def construir_arboles_por_insercion(eventos_json, zonas):
     """
-    "Carga por inserciones" (sección 12). Aplica el MISMO comparador y
-    la MISMA secuencia de inserción a un AVL (con balanceo) y a un BST
-    (sin balanceo), para poder comparar altura, hojas y comparaciones al
-    buscar. Es una carga de EVENTOS, no de reportes repetidos: un
-    identificador duplicado en la secuencia invalida el archivo
-    completo (no se construye nada).
+    "Insertion-based loading" (section 12). Applies the SAME comparator and
+    the SAME insertion sequence to an AVL (with balancing) and a BST
+    (without balancing), in order to compare height, leaves, and
+    comparisons when searching. This is an EVENT loading operation, not
+    one involving repeated reports: a duplicate identifier in the sequence
+    invalidates the entire file (nothing is built).
 
-    Devuelve (avl, bst, resumen); `resumen` trae raíz, altura y hojas de
-    cada árbol, listos para mostrar en la vista comparativa.
+    Returns (avl, bst, resumen); `resumen` contains the root, height, and
+    number of leaves of each tree, ready to be displayed in the comparison view.
     """
     identificadores = [datos_evento["identificador"] for datos_evento in eventos_json]
     if len(identificadores) != len(set(identificadores)):
@@ -267,16 +266,16 @@ def construir_arboles_por_insercion(eventos_json, zonas):
 # ---------------- lectura/escritura de archivo ----------------
 
 def guardar_json(datos, ruta):
-    """Escribe `datos` (un dict ya JSON-compatible) en `ruta`, con
-    sangría legible para poder revisar el archivo a mano."""
+    """Writes `datos` (a JSON-compatible dict) to `ruta`, with
+    readable indentation so the file can be reviewed manually."""
     with open(ruta, "w", encoding="utf-8") as archivo:
         json.dump(datos, archivo, indent=2, ensure_ascii=False)
 
 
 def leer_json(ruta):
-    """Lee y parsea un archivo JSON. Si el archivo no es JSON válido,
-    deja que json.JSONDecodeError se propague tal cual -- la interfaz
-    gráfica lo distingue de un ValidacionError de reglas de negocio."""
+    """Reads and parses a JSON file. If the file is not valid JSON,
+    lets json.JSONDecodeError propagate as-is -- the graphical interface
+    distinguishes it from a ValidacionError caused by business rules."""
     with open(ruta, "r", encoding="utf-8") as archivo:
         return json.load(archivo)
     

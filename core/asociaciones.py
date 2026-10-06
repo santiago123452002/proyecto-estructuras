@@ -8,11 +8,11 @@ def distancia_euclidiana(evento_a, evento_b):
 
 def es_candidato(evento_a, evento_b, w_horas, r_km):
     """
-    Sección 7: A es candidato a referencia de B cuando:
-      - A tiene mayor magnitud que B,
-      - A ocurrió ESTRICTAMENTE antes que B,
-      - la diferencia temporal es como máximo W horas,
-      - la distancia euclidiana entre epicentros es como máximo R km.
+    Section 7: A is a candidate reference for B when:
+    - A has a greater magnitude than B,
+    - A occurred STRICTLY before B,
+    - the time difference is at most W hours,
+    - the Euclidean distance between epicenters is at most R km.
     """
     if evento_a.identificador == evento_b.identificador:
         return False
@@ -33,30 +33,29 @@ def es_candidato(evento_a, evento_b, w_horas, r_km):
 
 def candidatos(evento_b, eventos_disponibles, w_horas, r_km):
     """
-    Candidatos a referencia de `evento_b` entre `eventos_disponibles`
-    (deben ser eventos activos y archivados; nunca eliminados —
-    responsabilidad de quien llama filtrar eso antes).
+    Reference candidates for `event_b` among `available_events`
+    (they must be active and archived events; never deleted —
+    it is the caller's responsibility to filter them beforehand).
     """
     return [a for a in eventos_disponibles if es_candidato(a, evento_b, w_horas, r_km)]
 
 
 def elegir_referencia(evento_b, lista_candidatos):
     """
-    Criterio determinista de desempate cuando `evento_b` tiene varios
-    candidatos (sección 7 exige uno que "dependa de los datos, no del
-    orden de llegada ni de la topología del AVL"):
+    Deterministic tie-breaking criterion when `event_b` has multiple
+    candidates (section 7 requires one that "depends on the data, not on
+    the arrival order or AVL topology"):
 
-      1) mayor magnitud del candidato (el sismo más fuerte es la
-         explicación más plausible de una réplica),
-      2) si empatan, el ocurrido más cerca en el tiempo de B,
-      3) si persiste el empate, el epicentro más cercano a B,
-      4) si aún persiste, el de menor identificador (desempate final
-         estable y reproducible).
+    1) greater candidate magnitude (the stronger earthquake is the
+        most plausible explanation for an aftershock),
+    2) if tied, the one that occurred closest in time to B,
+    3) if still tied, the epicenter closest to B,
+    4) if still tied, the one with the lowest identifier (final
+    stable and reproducible tie-breaker).
 
-    No depende del orden de llegada de los reportes ni de la forma que
-    tenga el AVL en ese momento: solo de los datos propios de los
-    eventos, así que el resultado es el mismo sin importar cómo se haya
-    insertado o balanceado el árbol.
+    It does not depend on the arrival order of the reports or the shape
+    of the AVL at that moment: only on the events' own data, so the
+    result is the same regardless of how the tree was inserted or balanced.
     """
     if not lista_candidatos:
         return None

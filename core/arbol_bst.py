@@ -3,14 +3,14 @@ from .nodo import Nodo
 
 class ArbolBST:
     """
-    Árbol binario de búsqueda "puro", SIN balanceo.
+    Pure binary search tree, WITHOUT balancing.
 
-    Se usa como árbol de comparación frente al AVL: la sección 12 del
-    enunciado pide insertar la misma secuencia de eventos, con el mismo
-    comparador, en un AVL y en este BST, y luego comparar altura, hojas
-    y comparaciones realizadas.
+    It is used as a comparison tree against the AVL: section 12 of the
+    statement requires inserting the same sequence of events, with the same
+    comparator, into an AVL and this BST, and then comparing height, leaves,
+    and comparisons performed.
 
-    No delega nada a bibliotecas de árboles: toda la lógica está aquí.
+    It does not delegate anything to tree libraries: all the logic is here.
     """
 
     def __init__(self):
@@ -21,10 +21,10 @@ class ArbolBST:
         return self._cantidad
 
     def insertar(self, elemento):
-        """Inserta un elemento nuevo siguiendo la clave K. Devuelve el
-        nodo creado. No maneja duplicados de identificador: esa gestión
-        (confirmación/corrección/conflicto) pertenece a la capa de
-        negocio, no al árbol."""
+        """Inserts a new element following key K. Returns the
+        created node. It does not handle duplicate identifiers: that management
+        (confirmation/correction/conflict) belongs to the business layer,
+        not to the tree."""
         nuevo = Nodo(elemento)
         if self.raiz is None:
             self.raiz = nuevo
@@ -49,7 +49,7 @@ class ArbolBST:
         return nuevo
 
     def buscar_nodo(self, clave):
-        """Devuelve (nodo, nodos_visitados). nodo es None si no existe."""
+        """Returns (node, nodes_visited). node is None if it does not exist."""
         actual = self.raiz
         visitados = 0
         while actual is not None:
@@ -63,7 +63,7 @@ class ArbolBST:
         return None, visitados
 
     def altura(self):
-        """Altura calculada recorriendo el árbol. Vacío = -1, hoja = 0."""
+        """Height calculated by traversing the tree. Empty = -1, leaf = 0."""
         return self._altura_nodo(self.raiz)
 
     def _altura_nodo(self, nodo):

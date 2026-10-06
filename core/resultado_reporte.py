@@ -13,9 +13,9 @@ class TipoResultadoReporte(Enum):
 
 class ResultadoReporte:
     """
-    Resultado de procesar un Reporte contra el Catalogo, según la tabla
-    de decisión de la sección 6. `evento` es el evento resultante cuando
-    aplica (alta, actualización, confirmación); None en los rechazos.
+    Result of processing a Report against the Catalog, according to the decision table
+    in Section 6. `evento` is the resulting event when applicable (new event, update,
+    or confirmation); None for rejected reports.
     """
 
     def __init__(self, tipo, mensaje, evento=None):

@@ -3,23 +3,23 @@ from .nodo import Nodo
 
 class ArbolAVL:
     """
-    Árbol AVL implementado desde cero (sin bibliotecas de árboles).
+    AVL Tree implemented from scratch (without tree libraries).
 
-    Es la estructura central del catálogo activo de eventos (sección 2
-    del enunciado). La clave de cada nodo es K = (prioridad, magnitud,
-    identificador); la comparación lexicográfica la implementa el propio
-    elemento almacenado (la clase Evento), este árbol solo usa <, ==, >
-    sobre esa clave.
+    It is the central structure of the active event catalog (section 2
+    of the statement). The key of each node is K = (priority, magnitude,
+    identifier); lexicographic comparison is implemented by the stored
+    element itself (the Event class), this tree only uses <, ==, >
+    comparisons on that key.
 
-    Convención de alturas (sección 14): árbol vacío = -1, hoja = 0.
-    Factor de balance = altura(izquierdo) - altura(derecho).
+    Height convention (section 14): empty tree = -1, leaf = 0.
+    Balance factor = height(left) - height(right).
 
-    Soporta balanceo diferido (modo estrés, sección 8): `insertar` y
-    `eliminar` reciben un parámetro `balancear`. Con `balancear=False`
-    se conserva el orden BST pero no se rotan los nodos, así que el
-    árbol puede dejar de cumplir la propiedad AVL. `recuperar_equilibrio`
-    restaura la propiedad AVL completa después.
-    """
+    Supports deferred balancing (stress mode, section 8): `insert` and
+    `delete` receive a `balance` parameter. With `balance=False`, the
+    BST ordering is preserved but nodes are not rotated, so the tree
+    may no longer satisfy the AVL property. `restore_balance`
+    restores the complete AVL property afterwards.
+"""
 
     def __init__(self):
         self.raiz = None
@@ -71,7 +71,7 @@ class ArbolAVL:
     # ---------------- rotaciones ----------------
 
     def _rotacion_derecha(self, y):
-        """Giro simple a la derecha. `y` es la raíz del subárbol desbalanceado."""
+        """Simple right rotation. `y` is the root of the unbalanced subtree."""
         x = y.izquierdo
         t2 = x.derecho
 
@@ -89,7 +89,7 @@ class ArbolAVL:
         return x
 
     def _rotacion_izquierda(self, x):
-        """Giro simple a la izquierda. `x` es la raíz del subárbol desbalanceado."""
+        """Simple left rotation. `x` is the root of the unbalanced subtree."""
         y = x.derecho
         t2 = y.izquierdo
 
@@ -108,16 +108,16 @@ class ArbolAVL:
 
     def _rebalancear(self, nodo):
         """
-        Recalcula la altura de `nodo` y aplica rotaciones hasta que su
-        factor de balance quede en {-1, 0, 1}. Se usa un bucle (no un
-        único "if") porque en modo estrés pueden acumularse varias
-        inserciones/eliminaciones sin rotar, y un solo giro no siempre
-        alcanza a corregir una diferencia de altura mayor que 2 (sección
-        8). Cada iteración dentro del bucle SÍ corresponde exactamente a
-        un caso LL/RR/LR/RL para las métricas de la sección 14.
+        Recalculates the height of `node` and applies rotations until its
+        balance factor is in {-1, 0, 1}. A loop is used (not a single
+        "if") because in stress mode, several insertions/deletions can
+        accumulate without rotations, and a single rotation may not be
+        enough to correct a height difference greater than 2 (section
+        8). Each iteration inside the loop DOES correspond exactly to
+                one LL/RR/LR/RL case for the metrics in section 14.
 
-        Devuelve la nueva raíz de este subárbol.
-        """
+        Returns the new root of this subtree.
+    """
         self._actualizar_altura(nodo)
         fb = self.factor_balance(nodo)
 
@@ -147,9 +147,9 @@ class ArbolAVL:
     # ---------------- inserción ----------------
 
     def insertar(self, elemento, balancear=True):
-        """Inserta un elemento nuevo. Si `balancear` es True (modo
-        normal) mantiene la propiedad AVL; si es False (modo estrés)
-        conserva el orden BST pero no rota. Devuelve el nodo insertado."""
+        """Inserts a new element. If `balancear` is True (normal mode),
+        maintains the AVL property; if it is False (stress mode),
+        preserves BST ordering but does not rotate. Returns the inserted node."""
         nuevo = Nodo(elemento)
         self.raiz = self._insertar_recursivo(self.raiz, nuevo, balancear)
         self.raiz.padre = None
@@ -175,9 +175,9 @@ class ArbolAVL:
     # ---------------- búsqueda ----------------
 
     def buscar_nodo(self, clave):
-        """Devuelve (nodo, nodos_visitados). nodo es None si no existe.
-        `nodos_visitados` es el costo simulado de la sección 9: para un
-        evento existente equivale a su profundidad + 1."""
+        """Returns (node, nodes_visited). node is None if it does not exist.
+        `nodes_visited` is the simulated cost from section 9: for an existing
+        event, it is equal to its depth + 1."""
         actual = self.raiz
         visitados = 0
         while actual is not None:
@@ -191,7 +191,7 @@ class ArbolAVL:
         return None, visitados
 
     def profundidad(self, clave):
-        """Profundidad del nodo con esa clave (raíz = 0), o None si no existe."""
+        """Depth of the node with the given key (root = 0), or None if it does not exist."""
         actual = self.raiz
         prof = 0
         while actual is not None:
@@ -207,9 +207,10 @@ class ArbolAVL:
     # ---------------- eliminación ----------------
 
     def eliminar(self, clave, balancear=True):
-        """Elimina el nodo con esa clave. Con `balancear=True` reequilibra;
-        con `balancear=False` (modo estrés) conserva el orden pero no rota.
-        Devuelve True si existía, False si no se encontró."""
+        """Deletes the node with the given key. With `balancear=True`, it rebalances;
+        with `balancear=False` (stress mode), it preserves ordering but does not rotate.
+        Returns True if the node existed, False if it was not found."""
+
         if self.buscar_nodo(clave)[0] is None:
             return False
         self.raiz = self._eliminar_recursivo(self.raiz, clave, balancear)
@@ -248,34 +249,33 @@ class ArbolAVL:
         self._actualizar_altura(nodo)
         return nodo
 
-    # ---------------- recuperación global (modo estrés, sección 8) ----------------
+    # ---------------- global recovery (stress mode, section 8) ----------------
     #
-    # Algoritmo de Day-Stout-Warren (1986), adaptado a esta clase. Usa
-    # EXCLUSIVAMENTE rotaciones -- nunca se vacía el árbol ni se
-    # reconstruye desde una lista aparte, como exige el enunciado -- y
-    # corrige diferencias de altura arbitrariamente grandes en dos fases:
+    # Day-Stout-Warren algorithm (1986), adapted to this class. It uses
+    # EXCLUSIVELY rotations -- the tree is never emptied nor rebuilt from
+    # a separate list, as required by the statement -- and corrects
+    # arbitrarily large height differences in two phases:
     #
-    #   Fase 1 ("vid"): convierte el árbol en una cadena que solo usa
-    #   enlaces derechos (recorre los nodos en el mismo orden que un
-    #   inorden), mediante rotaciones simples a la derecha repetidas.
+    #   Phase 1 ("vine"): converts the tree into a chain using only
+    #   right links (traverses the nodes in the same order as an
+    #   inorder traversal), using repeated simple right rotations.
     #
-    #   Fase 2 ("compresión"): aplica una serie de rotaciones simples a
-    #   la izquierda sobre esa cadena para convertirla en un árbol casi
-    #   perfectamente balanceado (un árbol completo de m = 2^k - 1 nodos,
-    #   más los n - m nodos sobrantes distribuidos en el último nivel).
+    #   Phase 2 ("compression"): applies a series of simple left rotations
+    #   to that chain to convert it into an almost perfectly balanced tree
+    #   (a complete tree of m = 2^k - 1 nodes, plus the n - m remaining
+    #   nodes distributed across the last level).
     #
-    # Cada rotación preserva el orden BST por construcción, así que el
-    # resultado conserva exactamente las mismas claves en el mismo orden
-    # relativo. El algoritmo hace un número acotado de rotaciones por
-    # nodo en cada fase (a lo sumo una vez que un nodo deja de tener
-    # hijo izquierdo permanece así en la Fase 1; la Fase 2 hace como
-    # máximo O(log n) pasadas), así que el costo total es O(n) y por lo
-    # tanto siempre termina.
+    # Each rotation preserves BST ordering by construction, so the
+    # resulting tree contains exactly the same keys in the same relative
+    # order. The algorithm performs a bounded number of rotations per
+    # node in each phase (at most once a node loses its left child in
+    # Phase 1; Phase 2 performs at most O(log n) passes), so the total
+    # cost is O(n) and therefore it always terminates.
 
     class _NodoPseudo:
-        """Cabecera temporal (no forma parte del árbol real) que le da
-        a las Fases 1 y 2 un lugar uniforme donde 'colgar' la raíz real,
-        para no tener que tratar el caso de la raíz como especial."""
+        """Temporary header (not part of the actual tree) that gives
+        Phases 1 and 2 a uniform place to 'attach' the real root,
+        so the root case does not have to be handled separately."""
         __slots__ = ("derecho",)
 
         def __init__(self, derecho):
@@ -283,14 +283,13 @@ class ArbolAVL:
 
     def recuperar_equilibrio(self):
         """
-        Restaura la propiedad AVL en TODO el árbol, incluso si existen
-        diferencias de altura mayores que 2 (acumuladas durante el modo
-        estrés). Devuelve True si el árbol quedó balanceado.
+        Restores the AVL property throughout the ENTIRE tree, even if there are
+        height differences greater than 2 (accumulated during stress mode).
+        Returns True if the tree is balanced.
 
-        Las rotaciones no crean ni destruyen nodos, así que cualquier
-        índice externo por identificador (ver Catalogo) sigue siendo
-        válido después de llamar a este método, sin necesidad de
-        reconstruirlo.
+        Rotations do not create or destroy nodes, so any external index by
+        identifier (see Catalog) remains valid after calling this method,
+        without needing to rebuild it.
         """
         if self.raiz is None:
             return True
@@ -316,10 +315,10 @@ class ArbolAVL:
         return self.esta_balanceado()
 
     def _arbol_a_vid(self, pseudo):
-        """Fase 1: convierte el árbol colgado de `pseudo.derecho` en una
-        cadena de enlaces derechos, usando solo rotaciones simples a la
-        derecha. No toca `padre` ni `altura`: eso se recalcula una sola
-        vez al final, en `_reconstruir_metadatos`."""
+        """Phase 1: converts the tree attached to `pseudo.derecho` into a
+        chain of right links, using only simple right rotations. It does not
+        modify `parent` or `height`: these are recalculated only once at the
+        end, in `_reconstruir_metadatos`."""
         anterior = pseudo
         actual = anterior.derecho
         while actual is not None:
@@ -335,8 +334,8 @@ class ArbolAVL:
                 actual = actual.derecho
 
     def _comprimir(self, pseudo, conteo):
-        """Fase 2: aplica `conteo` rotaciones simples a la izquierda a
-        lo largo de la cadena colgada de `pseudo.derecho`."""
+        """Phase 2: applies `count` simple left rotations along the chain
+        attached to `pseudo.derecho`."""
         escaner = pseudo
         for _ in range(conteo):
             hijo = escaner.derecho
@@ -347,9 +346,9 @@ class ArbolAVL:
             self.contador_rotaciones_recuperacion += 1
 
     def _reconstruir_metadatos(self, nodo, padre):
-        """Recorrido único en postorden para recalcular `padre` y
-        `altura` de todos los nodos después de la reestructuración de
-        `recuperar_equilibrio`. Devuelve la altura de `nodo`."""
+        """Single postorder traversal to recalculate `parent` and
+        `height` for all nodes after the restructuring performed by
+        `restore_balance`. Returns the height of `node`."""
         if nodo is None:
             return -1
         nodo.padre = padre
@@ -394,9 +393,9 @@ class ArbolAVL:
             resultado.append(nodo.elemento)
 
     def recorrido_por_niveles(self):
-        """Recorrido BFS (anchura), nivel por nivel (sección 14). Usa una
-        cola auxiliar simple con puntero de lectura, para no pagar el
-        costo O(n) de sacar por el índice 0 de una lista de Python."""
+        """BFS traversal (breadth-first), level by level (section 14). Uses a
+        simple auxiliary queue with a read pointer, avoiding the O(n) cost
+        of removing an element at index 0 from a Python list."""
         if self.raiz is None:
             return []
         resultado = []
@@ -429,14 +428,14 @@ class ArbolAVL:
 
     def subarboles_elegibles(self, criterio):
         """
-        Devuelve una lista de (nodo, cantidad_nodos, profundidad) para
-        CADA nodo cuyo subárbol completo cumple `criterio(evento)` en
-        TODOS sus eventos (una hoja también cuenta como subárbol de
-        tamaño 1). `criterio` es una función Evento -> bool.
+        Returns a list of (node, node_count, depth) for
+        EACH node whose complete subtree satisfies `criterion(event)`
+        for ALL of its events (a leaf also counts as a subtree of
+        size 1). `criterion` is an Event -> bool function.
 
-        Un único recorrido postorden, O(n): al llegar a cada nodo ya se
-        sabe si sus dos subárboles son completamente elegibles, así que
-        basta con combinar esa información con el propio nodo.
+        A single postorder traversal, O(n): when reaching each node, it is already
+        known whether its two subtrees are completely eligible, so it is enough
+        to combine that information with the node itself.
         """
         resultado = []
 

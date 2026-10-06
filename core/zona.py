@@ -1,8 +1,8 @@
 class Zona:
     """
-    Zona rectangular del escenario (sección 3). Límites en km, entre 0 y
-    1000 en ambos ejes. Los bordes son inclusivos: un epicentro sobre el
-    límite de la zona pertenece a ella.
+    Rectangular zone of the scenario (Section 3). Boundaries are given in km,
+    between 0 and 1000 on both axes. The boundaries are inclusive: an epicenter
+    located on the boundary of the zone belongs to that zone.
     """
 
     def __init__(self, nombre, x_min, x_max, y_min, y_max, poblada):
@@ -25,11 +25,11 @@ class Zona:
 
 def pertenece_a_zona_poblada(x, y, zonas):
     """
-    Un epicentro pertenece a una zona cuando está dentro de ella o sobre
-    su borde. Si el punto cae en el borde de dos zonas, se clasifica
-    como zona poblada si CUALQUIERA de las dos está definida como tal
-    (sección 3: "se clasifica como zona poblada si alguna de las dos
-    está definida de esa forma").
+    An epicenter belongs to a zone when it is inside the zone or located on
+    its boundary. If the point lies on the boundary of two zones, it is
+    classified as a populated zone if EITHER of the two zones is defined
+    as populated (Section 3: "it is classified as a populated zone if either
+    one is defined as such").
     """
     for zona in zonas:
         if zona.contiene(x, y) and zona.poblada:

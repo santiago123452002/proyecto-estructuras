@@ -1,11 +1,11 @@
 class Reporte:
     """
-    Datos crudos que llegan de una estación (sección 6, "Procesamiento de
-    reportes recibidos"). A diferencia de un Evento, un Reporte NO se
-    valida ni se le calcula prioridad al crearlo: puede traer un
-    identificador desconocido, repetir una revisión, o traer datos que
-    entran en conflicto con el evento vigente. Esa decisión se toma al
-    procesarlo contra el catálogo (ver Catalogo.procesar_reporte).
+    Raw data received from a station (section 6, "Processing
+    received reports"). Unlike an Event, a Report is NOT
+    validated and its priority is not calculated when it is created:
+    it may contain an unknown identifier, repeat a revision, or contain
+    data that conflicts with the current event. That decision is made when
+    it is processed against the catalog (see Catalogo.procesar_reporte).
     """
 
     def __init__(self, identificador, magnitud, profundidad, epicentro_x, epicentro_y,

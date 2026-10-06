@@ -1,14 +1,15 @@
 """
-Conversión entre los objetos del dominio (Evento, Zona, Reporte, Nodo del
-AVL) y diccionarios que `json.dump`/`json.load` pueden escribir y leer
-directamente (sección 12). El formato de fecha es ISO 8601 con sufijo
-'Z' (UTC), tal como especifica la sección 3 del enunciado — por ejemplo
+Conversion between domain objects (Event, Zone, Report, AVL Node) and
+dictionaries that `json.dump`/`json.load` can write and read directly
+(Section 12). The date format is ISO 8601 with the 'Z' suffix (UTC), as
+specified in Section 3 of the requirements — for example,
 "2026-09-07T10:00:00Z".
 
-Toda función `dict_a_*` revalida los datos al reconstruir el objeto
-(reutilizando las validaciones que ya tiene Evento, y recalculando la
-prioridad y la pertenencia a zona poblada) — así un JSON editado a mano
-con datos corruptos se rechaza igual que si viniera de la interfaz.
+Every `dict_to_*` function validates the data again when reconstructing
+the object (reusing the validations already defined in Event, and
+recalculating the priority and whether the event belongs to a populated
+zone). This ensures that a manually edited JSON file containing corrupted
+data is rejected in the same way as data coming from the interface.
 """
 
 from datetime import datetime, timezone
@@ -19,7 +20,7 @@ from .zona import Zona, pertenece_a_zona_poblada
 from .reporte import Reporte
 
 
-# ---------------- fechas (ISO 8601, sección 3) ----------------
+"""datetime -> ISO 8601 text with the 'Z' suffix, with second precision."""
 
 def fecha_a_texto(fecha_hora):
     """datetime -> texto ISO 8601 con sufijo 'Z', con precisión de segundos."""
@@ -80,11 +81,11 @@ def evento_a_dict(evento):
 
 def dict_a_evento(datos, zonas):
     """
-    Reconstruye un Evento a partir de un dict. Recalcula la prioridad
-    con las `zonas` dadas y la compara contra `datos["prioridad"]`: si
-    no coinciden, el archivo está corrupto o fue editado a mano de forma
-    inconsistente, y se rechaza (sección 12: "Una prioridad almacenada
-    debe coincidir con la calculada").
+    Reconstructs an Event from a dictionary. Recalculates the priority using
+    the given `zones` and compares it with `datos["prioridad"]`. If they do
+    not match, the file is considered corrupted or manually edited with
+    inconsistent data, and the data is rejected (Section 12: "A stored
+    priority must match the calculated priority").
     """
     try:
         estaciones = datos.get("estaciones") or ["DESCONOCIDA"]
@@ -155,12 +156,12 @@ def dict_a_reporte(datos):
 
 def nodo_a_dict(nodo):
     """
-    Serializa la topología REAL (no se reconstruye a partir de una
-    lista ordenada, sino que se recorre el árbol tal como está). Incluye
-    `altura` y `factor_balance` explícitamente (aunque son derivables)
-    porque la sección 12 exige poder validar, al cargar, que "una
-    topología... alturas y factores almacenados" coincidan con los
-    recalculados a partir de la estructura real.
+    Serializes the REAL topology (it is not reconstructed from a sorted list;
+    instead, the tree is traversed exactly as it currently exists). It includes
+    `altura` and `factor_balance` explicitly (although they are derivable)
+    because Section 12 requires validating, when loading, that the stored
+    topology, heights, and balance factors match the values recalculated from
+    the actual structure.
     """
     if nodo is None:
         return None
@@ -177,11 +178,11 @@ def nodo_a_dict(nodo):
 
 def dict_a_nodo(datos, zonas):
     """
-    Reconstruye el nodo (y recursivamente sus hijos) SIN reinsertar
-    nada: se arman los enlaces izquierdo/derecho/padre directamente,
-    preservando exactamente la topología del archivo. Valida altura y
-    factor de balance almacenados contra los recalculados a partir de
-    los hijos ya reconstruidos.
+    Reconstructs the node (and recursively its children) WITHOUT reinserting
+    anything: the left, right, and parent links are created directly,
+    preserving exactly the topology stored in the file. The stored height and
+    balance factor are validated against the values recalculated from the
+    already reconstructed children.
     """
     if datos is None:
         return None

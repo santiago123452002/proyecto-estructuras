@@ -1,9 +1,8 @@
 """
-Pruebas de la Fase 8: las 4 consultas de la sección 11 (pendientes,
-filtros, asociaciones, acceso costoso), la auditoría "Verificar
-estructura" y los indicadores de la sección 14.
+Phase 8 tests: the 4 queries from Section 11 (pending events,
+filters, associations, costly access), the "Verify structure"
+audit, and the indicators from Section 14.
 """
-
 import sys
 import os
 
@@ -29,20 +28,19 @@ def _escenario():
     return Escenario(zonas=_zonas_ejemplo(), reloj_simulacion=RELOJ)
 
 
-# ---------------- consulta 1: pendientes_top_k ----------------
-
+# ---------------- query 1: pendientes_top_k ----------------
 def test_pendientes_top_k_orden_descendente_y_excluye_revisados():
     escenario = _escenario()
     catalogo = escenario.catalogo
     for i, magnitud in enumerate([6.0, 4.8, 5.5, 6.5, 3.0], start=1):
         escenario.alta_evento(i, magnitud, 10.0, 500.0, 500.0,
                                datetime(2026, 9, 10, 9, 0, 0), "EST-01")
-    escenario.marcar_revisado(4)  # el de mayor clave queda fuera de "pendientes"
+    escenario.marcar_revisado(4)  # the one with the highest key is excluded from "pending"
 
     resultado, visitados = catalogo.pendientes_top_k(2)
 
     claves = [e.clave for e in resultado]
-    assert claves == sorted(claves, reverse=True)  # descendente
+    assert claves == sorted(claves, reverse=True)  # descending
     assert all(e.estado_atencion == "pendiente" for e in resultado)
     assert 4 not in [e.identificador for e in resultado]
     assert visitados >= 2
@@ -64,7 +62,7 @@ def test_pendientes_top_k_rechaza_k_invalido():
         escenario.catalogo.pendientes_top_k(-3)
 
 
-# ---------------- consulta 2: buscar_por_filtros ----------------
+# ---------------- query 2: buscar_por_filtros ----------------
 
 def test_buscar_por_filtros_combina_magnitud_profundidad_y_fecha():
     escenario = _escenario()
@@ -91,12 +89,11 @@ def test_buscar_por_filtros_sin_restricciones_devuelve_todo():
     assert len(resultado) == 3
 
 
-# ---------------- consulta 3: consultar_asociaciones ----------------
-
+# 2 has M=7 (out of range), 3 has H=200 (out of range), 4 is too old
 def test_consultar_asociaciones_indica_activo_o_archivado():
     escenario = _escenario()
     fecha_temprana = datetime(2026, 9, 10, 9, 0, 0)
-    escenario.alta_evento(1, 6.5, 10.0, 500.0, 500.0, fecha_temprana, "EST-01")  # A: mayor magnitud, antes
+    escenario.alta_evento(1, 6.5, 10.0, 500.0, 500.0, fecha_temprana, "EST-01")  # full traversal, documented in the code
     escenario.alta_evento(2, 5.0, 10.0, 500.0, 500.0, fecha_temprana + timedelta(hours=1), "EST-01")  # B
 
     info = escenario.catalogo.consultar_asociaciones(2)
@@ -125,11 +122,10 @@ def test_consultar_asociaciones_identificador_inexistente():
         escenario.catalogo.consultar_asociaciones(999)
 
 
-# ---------------- consulta 4: acceso costoso ----------------
-
+# ---------------- query 4: costly access ----------------
 def test_acceso_costoso_marca_prioridad_alta_mas_alla_del_limite():
     escenario = _escenario()
-    escenario.configurar_l_profundidad(0)  # cualquier profundidad > 0 ya cuenta
+    escenario.configurar_l_profundidad(0)  # any depth > 0 already counts
 
     for i, magnitud in enumerate([9.0, 8.0, 7.0, 6.5, 6.1, 6.2, 6.3], start=1):
         escenario.alta_evento(i, magnitud, 5.0, 500.0, 500.0,
@@ -159,8 +155,7 @@ def test_configurar_l_profundidad_rechaza_negativos():
         escenario.configurar_l_profundidad(-1)
 
 
-# ---------------- auditoría: verificar_estructura ----------------
-
+# ---------------- audit: verificar_estructura ----------------
 def test_verificar_estructura_arbol_sano_no_tiene_errores():
     escenario = _escenario()
     for i in range(1, 11):
@@ -182,11 +177,11 @@ def test_verificar_estructura_en_modo_estres_reporta_desbalance_esperado_no_erro
         escenario.procesar_siguiente_reporte()
 
     reporte_normal = escenario.catalogo.verificar_estructura(modo="estres")
-    assert reporte_normal["ok"] is True  # nada de esto son "errores" en modo estrés
+    assert reporte_normal["ok"] is True  # none of this is considered an "error" in stress mode
     assert len(reporte_normal["desbalances_esperados"]) > 0
 
     reporte_como_normal = escenario.catalogo.verificar_estructura(modo="normal")
-    assert reporte_como_normal["ok"] is False  # el mismo árbol, evaluado como si debiera estar balanceado
+    assert reporte_como_normal["ok"] is False  # the same tree, evaluated as if it should be balanced
 
 
 def test_verificar_estructura_detecta_asociacion_rota_manualmente():
@@ -199,7 +194,7 @@ def test_verificar_estructura_detecta_asociacion_rota_manualmente():
     assert any("999" in error for error in reporte["errores"])
 
 
-# ---------------- indicadores (sección 14) ----------------
+# ---------------- indicators (Section 14) ----------------
 
 def test_generar_indicadores_refleja_conteos_correctos():
     escenario = _escenario()
@@ -212,9 +207,9 @@ def test_generar_indicadores_refleja_conteos_correctos():
 
     assert indicadores["eventos_activos"] == 2
     assert indicadores["correcciones_aceptadas"] == 1
-    assert indicadores["eventos_por_prioridad"][3] == 1  # evento 1: M=6.5
-    assert indicadores["eventos_por_prioridad"][1] == 1  # evento 2: M=4.0
-    assert indicadores["pendientes_de_atencion"] == 1    # el 2 quedó revisado
+    assert indicadores["eventos_por_prioridad"][3] == 1  # even 1: M=6.5
+    assert indicadores["eventos_por_prioridad"][1] == 1  # even 2: M=4.0
+    assert indicadores["pendientes_de_atencion"] == 1    #event 2 was marked as reviewed
     assert set(indicadores["recorrido_inorden"]) == {1, 2}
     assert set(indicadores["recorrido_por_niveles"]) == {1, 2}
 
@@ -256,9 +251,9 @@ def test_generar_indicadores_cuenta_reportes_por_tipo():
 
 def test_metricas_se_deshacen_junto_con_la_accion():
     """
-    Los contadores viven dentro de Catalogo, así que quedan incluidos en
-    cada snapshot de Escenario -- deshacer una acción también revierte
-    su efecto sobre los indicadores.
+    The counters live inside Catalog, so they are included in
+    each Scenario snapshot — undoing an action also reverts
+    its effect on the indicators.
     """
     escenario = _escenario()
     escenario.alta_evento(1, 5.0, 10.0, 500.0, 500.0, datetime(2026, 9, 10, 9, 0, 0), "EST-01")

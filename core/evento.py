@@ -6,8 +6,8 @@ RANGO_COORDENADA = (0.0, 1000.0)
 
 
 class ValidacionError(Exception):
-    """Se lanza cuando algún dato de un evento o de una operación
-    incumple una regla obligatoria del enunciado."""
+    """Raised when any data from an event or operation
+    violates a mandatory rule from the statement."""
     pass
 
 
@@ -20,9 +20,9 @@ def _con_un_decimal(valor, nombre):
 
 class Evento:
     """
-    Evento sísmico activo (sección 3). La clave K = (prioridad, magnitud,
-    identificador) SIEMPRE se deriva de los datos vigentes mediante
-    `actualizar_prioridad`; nunca se asigna directamente.
+    Active seismic event (section 3). The key K = (priority, magnitude,
+    identifier) is ALWAYS derived from the current data through
+    `actualizar_prioridad`; it is never assigned directly.
     """
 
     def __init__(self, identificador, magnitud, profundidad, epicentro_x, epicentro_y,
@@ -68,8 +68,8 @@ class Evento:
     # ---------------- prioridad y clave ----------------
 
     def actualizar_prioridad(self, en_zona_poblada):
-        """Recalcula P a partir de los datos vigentes. Debe llamarse
-        siempre que cambien magnitud, profundidad o epicentro."""
+        """Recalculates P from the current data. It must always be called
+        whenever magnitude, depth, or epicenter changes."""
         self.en_zona_poblada = en_zona_poblada
         self.prioridad = calcular_prioridad(self.magnitud, self.profundidad, en_zona_poblada)
         return self.prioridad
@@ -82,9 +82,9 @@ class Evento:
 
     def datos_iguales(self, magnitud, profundidad, epicentro_x, epicentro_y, fecha_hora):
         """
-        Sección 6: la igualdad de datos para procesar reportes se refiere
-        a magnitud, profundidad, epicentro y tiempo de ocurrencia — nunca
-        al emisor del reporte ni al formato del texto recibido.
+        Section 6: data equality for processing reports refers
+        to magnitude, depth, epicenter, and occurrence time — never
+        to the report sender or the format of the received text.
         """
         return (self.magnitud == magnitud and self.profundidad == profundidad
                 and self.epicentro_x == epicentro_x and self.epicentro_y == epicentro_y

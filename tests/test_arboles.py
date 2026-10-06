@@ -1,10 +1,10 @@
 """
-Pruebas de la Fase 1 (BST y AVL genéricos).
+Phase 1 tests (generic BST and AVL trees).
 
-Se usa una clase mínima `ElementoPrueba` que solo expone `clave`, porque
-la clase Evento real (con magnitud, profundidad, epicentro, etc.) se
-construye en la Fase 2. Esto nos permite probar el árbol de forma
-aislada antes de conectarlo con el resto del sistema.
+A minimal `ElementoPrueba` class is used, exposing only the `clave`
+attribute, because the real Event class (with magnitude, depth, epicenter,
+etc.) is built in Phase 2. This allows the tree to be tested independently
+before connecting it to the rest of the system.
 """
 
 import sys
@@ -25,9 +25,9 @@ class ElementoPrueba:
 
 def test_direccion_insercion_ejemplo_enunciado():
     """
-    Reproduce el ejemplo de la sección 5: frente a un nodo cuya clave es
-    (3, 5.2, 10), verifica que cada clave entrante caiga en la dirección
-    indicada por el documento.
+    Reproduces the example from Section 5: given a node whose key is
+    (3, 5.2, 10), verifies that each incoming key is placed in the
+    direction specified by the document.
     """
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(3, 5.2, 10))
@@ -48,8 +48,10 @@ def test_direccion_insercion_ejemplo_enunciado():
 
 
 def test_rotacion_ll():
-    """Insertar en orden descendente de identificador (misma prioridad y
-    magnitud) fuerza una cadena hacia la izquierda -> rotación LL."""
+    """
+    Inserting in descending identifier order (with the same priority and
+    magnitude) forces a chain to the left -> LL rotation.
+    """
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(1, 5.0, 30))
     avl.insertar(ElementoPrueba(1, 5.0, 20))
@@ -62,7 +64,9 @@ def test_rotacion_ll():
 
 
 def test_rotacion_rr():
-    """Insertar en orden ascendente fuerza una cadena hacia la derecha -> rotación RR."""
+    """
+    Inserting in ascending order forces a chain to the right -> RR rotation.
+    """
     avl = ArbolAVL()
     avl.insertar(ElementoPrueba(1, 5.0, 10))
     avl.insertar(ElementoPrueba(1, 5.0, 20))
@@ -131,9 +135,11 @@ def test_eliminacion_mantiene_balance_y_orden():
 
 
 def test_bst_no_balancea_y_avl_si_con_insercion_ascendente():
-    """Compara BST vs AVL con la misma secuencia ascendente (sección 12):
-    el BST degenera en una lista (altura = n-1) y el AVL se mantiene
-    logarítmico."""
+    """
+    Compares BST vs AVL using the same ascending sequence (Section 12):
+    the BST degenerates into a list (height = n-1), while the AVL tree
+    maintains logarithmic height.
+    """
     n = 15
     bst = ArbolBST()
     avl = ArbolAVL()

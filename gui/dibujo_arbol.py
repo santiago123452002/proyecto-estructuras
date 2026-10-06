@@ -13,12 +13,12 @@ COLOR_PRIORIDAD = {
 
 def dibujar_en_escena(escena, raiz):
     """
-    Dibuja cualquier árbol binario (cualquier objeto con .izquierdo,
-    .derecho y .elemento.identificador/.elemento.prioridad, como Nodo
-    de ArbolAVL o de ArbolBST) en la escena Qt dada. Se usa tanto en la
-    vista comparativa AVL-vs-BST como en cualquier otra miniatura de
-    árbol que se necesite más adelante -- así no se repite la lógica de
-    posicionamiento (inorden = x, profundidad = y) en cada lugar.
+    Draws any binary tree (any object with .izquierdo, .derecho, and
+    .elemento.identificador/.elemento.prioridad attributes, such as an
+    AVLTree or BSTTree node) in the given Qt scene. It is used both in the
+    AVL-vs-BST comparison view and in any other tree thumbnail that may be
+    needed later. This avoids repeating the positioning logic (in-order =
+    x, depth = y) in different places.
     """
     escena.clear()
     if raiz is None:

@@ -1,7 +1,7 @@
 """
-Pruebas de la Fase 7: guardado estructural completo, carga por
-topología (con toda su validación) y carga por inserciones (comparación
-AVL vs BST) — sección 12.
+Phase 7 tests: complete structural saving, loading by topology (with
+full validation), and loading by insertions (AVL vs BST comparison)
+— Section 12.
 """
 
 import sys
@@ -42,8 +42,7 @@ def _escenario_con_datos():
     return escenario
 
 
-# ---------------- fechas ----------------
-
+# ---------------- dates ----------------
 def test_fecha_a_texto_y_de_vuelta():
     fecha = datetime(2026, 9, 7, 10, 0, 0)
     texto = fecha_a_texto(fecha)
@@ -56,15 +55,14 @@ def test_texto_a_fecha_formato_invalido():
         texto_a_fecha("no es una fecha")
 
 
-# ---------------- guardado estructural: round-trip completo ----------------
-
+# ---------------- structural saving: complete round-trip ----------------
 def test_exportar_e_importar_reproduce_el_mismo_escenario():
     original = _escenario_con_datos()
     original.eliminar_evento(101)
     original.configurar_asociaciones(w_horas=10.0, r_km=5.0)
 
     datos = exportar_escenario(original)
-    # confirmar que es JSON-serializable de verdad, no solo "parece" un dict
+# confirm that it is actually JSON-serializable, not just that it "looks" like a dict
     texto = json.dumps(datos)
     datos_releidos = json.loads(texto)
 
@@ -100,12 +98,11 @@ def test_exportar_incluye_cola_en_orden_original():
     assert orden_reconstruido == orden_original == [200, 201]
 
 
-# ---------------- carga por topología: validaciones ----------------
-
+# ---------------- topology loading: validations ----------------
 def test_carga_por_topologia_rechaza_prioridad_almacenada_incorrecta():
     escenario = _escenario_con_datos()
     datos = exportar_escenario(escenario)
-    # corromper a mano la prioridad guardada del primer evento
+    # manually corrupt the stored priority of the first event
     datos["arbol_activo"]["evento"]["prioridad"] = 1
 
     with pytest.raises(ValidacionError):
@@ -124,7 +121,7 @@ def test_carga_por_topologia_rechaza_altura_almacenada_incorrecta():
 def test_carga_por_topologia_rechaza_identificador_duplicado():
     escenario = _escenario_con_datos()
     datos = exportar_escenario(escenario)
-    # duplicar el identificador de la raíz dentro de su propio hijo
+    # duplicate the root's identifier inside its own child
     nodo_raiz = datos["arbol_activo"]
     hijo = nodo_raiz["izquierdo"] or nodo_raiz["derecho"]
     if hijo is not None:
@@ -135,11 +132,11 @@ def test_carga_por_topologia_rechaza_identificador_duplicado():
 
 def test_carga_por_topologia_rechaza_desbalance_en_modo_normal():
     """
-    Una topología ordenada pero desbalanceada solo puede cargarse con el
-    modo estrés activado (sección 12).
+    An ordered but unbalanced topology can only be loaded with
+    stress mode enabled (Section 12).
     """
-    # cadena manual de 3 nodos, deliberadamente desbalanceada (sin usar
-    # el AVL para construirla, ya que este SIEMPRE balancea)
+    # manual chain of 3 nodes, deliberately unbalanced (without using
+    # the AVL to build it, since it ALWAYS balances)
     zonas_json = []
     evento_a = {
         "identificador": 1, "magnitud": 1.0, "profundidad": 10.0,
@@ -182,8 +179,8 @@ def test_carga_por_topologia_rechaza_orden_bst_roto():
         "fecha_hora": "2026-09-10T09:00:00Z", "revision": 1,
         "estaciones": ["EST-01"], "estado_atencion": "pendiente", "prioridad": 1,
     }
-    # magnitud 9.0 -> prioridad 3, puesta como hijo IZQUIERDO de un nodo
-    # de prioridad 1: viola el orden BST (izquierdo debería ser menor)
+    # magnitude 9.0 -> priority 3, placed as the LEFT child of a node
+# with priority 1: violates BST ordering (left should be smaller)
     evento_b = dict(evento_a, identificador=2, magnitud=9.0, prioridad=3)
 
     nodo_b = {"evento": evento_b, "altura": 0, "factor_balance": 0, "izquierdo": None, "derecho": None}
@@ -207,7 +204,7 @@ def test_carga_por_topologia_rechaza_orden_bst_roto():
 def test_carga_por_topologia_rechaza_identificador_duplicado_en_activo_e_historico():
     escenario = _escenario_con_datos()
     datos = exportar_escenario(escenario)
-    # meter en "archivados" un evento con el mismo id que la raíz activa
+    # put in "archived" an event with the same ID as the active root
     datos["historico"]["archivados"] = [dict(datos["arbol_activo"]["evento"])]
 
     with pytest.raises(ValidacionError):
@@ -250,7 +247,7 @@ def test_escenario_cargar_por_topologia_reemplaza_y_es_deshacible():
     assert escenario.catalogo.esta_activo(999)
 
 
-# ---------------- carga por inserciones: comparación AVL vs BST ----------------
+# ---------------- insertion loading: AVL vs BST comparison ----------------
 
 def test_carga_por_inserciones_compara_avl_balanceado_contra_bst_degenerado():
     zonas = _zonas_ejemplo()
@@ -261,12 +258,12 @@ def test_carga_por_inserciones_compara_avl_balanceado_contra_bst_degenerado():
             "fecha_hora": "2026-09-10T09:00:00Z", "revision": 1,
             "estaciones": ["EST-01"], "estado_atencion": "pendiente", "prioridad": 3,
         }
-        for i in range(1, 16)  # ascendente -> degenera el BST
+        for i in range(1, 16)  # ascending -> BST degenerates
     ]
 
     avl, bst, resumen = construir_arboles_por_insercion(eventos_json, zonas)
 
-    assert resumen["bst"]["altura"] == 14      # cadena pura
+    assert resumen["bst"]["altura"] == 14      # pure chain
     assert resumen["avl"]["altura"] < 5        # log2(15) ~ 3.9
     assert resumen["avl"]["cantidad"] == resumen["bst"]["cantidad"] == 15
     assert avl.esta_balanceado() is True
@@ -279,7 +276,7 @@ def test_carga_por_inserciones_rechaza_identificador_duplicado():
          "epicentro_x": 500.0, "epicentro_y": 500.0,
          "fecha_hora": "2026-09-10T09:00:00Z", "revision": 1,
          "estaciones": ["EST-01"], "estado_atencion": "pendiente", "prioridad": 2},
-        {"identificador": 1, "magnitud": 6.0, "profundidad": 10.0,  # id repetido
+        {"identificador": 1, "magnitud": 6.0, "profundidad": 10.0,  # repeated ID
          "epicentro_x": 500.0, "epicentro_y": 500.0,
          "fecha_hora": "2026-09-10T09:00:00Z", "revision": 1,
          "estaciones": ["EST-01"], "estado_atencion": "pendiente", "prioridad": 3},
@@ -305,12 +302,12 @@ def test_escenario_cargar_por_inserciones_reemplaza_solo_el_catalogo():
 
     assert len(escenario.catalogo) == 1
     assert escenario.catalogo.esta_activo(500)
-    assert not escenario.catalogo.esta_activo(100)  # el catálogo anterior se reemplazó
-    assert len(escenario.cola) == 1                  # la cola NO se toca en esta carga
+    assert not escenario.catalogo.esta_activo(100)  # the previous catalog was replaced
+    assert len(escenario.cola) == 1                  # the queue is NOT touched by this load
     assert resumen["avl"]["cantidad"] == 1
 
 
-# ---------------- lectura/escritura real de archivo ----------------
+# ---------------- actual file reading/writing ----------------
 
 def test_guardar_y_leer_json_en_disco(tmp_path):
     escenario = _escenario_con_datos()

@@ -1,10 +1,10 @@
 def procesar_siguiente(cola, catalogo, zonas, reloj_simulacion, balancear=True):
     """
-    Procesamiento de un reporte por paso (sección 8). Desencola el
-    reporte más antiguo y lo procesa contra el catálogo. `balancear=False`
-    corresponde al modo estrés: se aplaza el balanceo del AVL.
+    Processing one report per step (section 8). Dequeues the
+    oldest report and processes it against the catalog. `balancear=False`
+    corresponds to stress mode: AVL balancing is postponed.
 
-    Devuelve (reporte, resultado). Lanza IndexError si la cola está vacía.
+    Returns (report, result). Raises IndexError if the queue is empty.
     """
     reporte = cola.desencolar()
     resultado = catalogo.procesar_reporte(reporte, zonas, reloj_simulacion, balancear=balancear)
@@ -13,11 +13,11 @@ def procesar_siguiente(cola, catalogo, zonas, reloj_simulacion, balancear=True):
 
 def procesar_todos(cola, catalogo, zonas, reloj_simulacion, balancear=True):
     """
-    Procesamiento continuo (sección 8): resuelve todos los reportes
-    pendientes en orden FIFO, cada uno como un paso independiente.
-    Devuelve una lista de (reporte, resultado) en el orden en que se
-    procesaron. La pausa entre pasos es un asunto de la interfaz gráfica,
-    no de esta función.
+    Continuous processing (section 8): processes all pending reports
+    in FIFO order, each one as an independent step.
+    Returns a list of (report, result) in the order in which they
+    were processed. The pause between steps is a matter for the graphical
+    interface, not this function.
     """
     resultados = []
     while not cola.esta_vacia():

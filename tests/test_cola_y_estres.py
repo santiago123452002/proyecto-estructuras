@@ -1,7 +1,7 @@
 """
-Pruebas de la Fase 4: Reporte, ColaReportes (FIFO), la tabla de decisión
-de la sección 6 (Catalogo.procesar_reporte) y el modo estrés con
-recuperación global del AVL (sección 8).
+Phase 4 tests: Report, ColaReportes (FIFO), the decision table
+from Section 6 (Catalogo.procesar_reporte), and stress mode with
+global AVL recovery (Section 8).
 """
 
 import sys
@@ -36,7 +36,6 @@ def _reporte(identificador, magnitud, revision, estacion, profundidad=10.0,
 
 
 # ---------------- ColaReportes (FIFO) ----------------
-
 def test_cola_mantiene_orden_fifo():
     cola = ColaReportes()
     cola.encolar("A")
@@ -58,12 +57,11 @@ def test_cola_vacia_lanza_error():
         cola.desencolar()
 
 
-# ---------------- tabla de decisión (sección 6) ----------------
-
+# ---------------- decision table (Section 6) ----------------
 def test_identificador_desconocido_crea_evento_nuevo():
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
-    reporte = _reporte(100, 6.0, revision=3, estacion="EST-01")  # 1ra revisión puede ser > 1
+    reporte = _reporte(100, 6.0, revision=3, estacion="EST-01")  # first review can be > 1
 
     resultado = catalogo.procesar_reporte(reporte, zonas, RELOJ)
 
@@ -85,7 +83,7 @@ def test_revision_mayor_sustituye_datos_y_recalcula_prioridad():
     assert resultado.tipo == TipoResultadoReporte.ACTUALIZADO
     assert resultado.evento.revision == 2
     assert resultado.evento.prioridad == 3
-    assert len(catalogo) == 1  # nunca se creó un segundo nodo
+    assert len(catalogo) == 1 # never created a second node
 
     evento, _ = catalogo.consultar_evento(200)
     assert evento.magnitud == 6.5
@@ -105,7 +103,7 @@ def test_igual_revision_e_iguales_datos_confirma_y_agrega_estacion():
     assert evento.estaciones == {"EST-01", "EST-02"}
     assert len(catalogo) == 1
 
-    # repetir la misma confirmación no crea nodos ni duplica estaciones
+    # repeating the same confirmation does not create nodes or duplicate stations
     resultado2 = catalogo.procesar_reporte(
         _reporte(300, 5.0, revision=1, estacion="EST-02", fecha_hora=fecha), zonas, RELOJ
     )
@@ -120,23 +118,23 @@ def test_igual_revision_y_datos_distintos_es_conflicto():
     catalogo.alta_evento(400, 5.0, 10.0, 500.0, 500.0,
                           datetime(2026, 9, 7, 9, 0, 0), "EST-01", zonas, RELOJ)
 
-    reporte = _reporte(400, 7.0, revision=1, estacion="EST-02")  # misma revisión, otra magnitud
+    reporte = _reporte(400, 7.0, revision=1, estacion="EST-02")  # same revision, different magnitude
     resultado = catalogo.procesar_reporte(reporte, zonas, RELOJ)
 
     assert resultado.tipo == TipoResultadoReporte.CONFLICTO
     evento, _ = catalogo.consultar_evento(400)
-    assert evento.magnitud == 5.0  # no se sobrescribió nada
+    assert evento.magnitud == 5.0  # nothing was overwritten
 
 
 def test_revision_menor_se_descarta_como_antiguo():
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
-    catalogo.corregir_evento  # solo para referencia, no se usa aquí
+    catalogo.corregir_evento  
     catalogo.alta_evento(500, 5.0, 10.0, 500.0, 500.0,
                           datetime(2026, 9, 7, 9, 0, 0), "EST-01", zonas, RELOJ)
-    catalogo.corregir_evento(500, zonas, RELOJ, magnitud=5.5)  # sube a revisión 2
+    catalogo.corregir_evento(500, zonas, RELOJ, magnitud=5.5)  
 
-    reporte = _reporte(500, 9.0, revision=1, estacion="EST-02")  # revisión vieja
+    reporte = _reporte(500, 9.0, revision=1, estacion="EST-02")  
     resultado = catalogo.procesar_reporte(reporte, zonas, RELOJ)
 
     assert resultado.tipo == TipoResultadoReporte.ANTIGUO
@@ -149,10 +147,10 @@ def test_revision_menor_se_descarta_como_antiguo():
 
 def test_reporte_tardio_no_reordena_por_fecha_de_llegada():
     """
-    Sección 16: se reciben eventos de M=5.6 a las 10:00 y M=4.2 a las
-    10:20; luego llega uno de M=6.1 ocurrido a las 09:55 (antes que los
-    otros dos, pero recibido después). El sistema debe registrarlo igual,
-    porque cada identificador es un terremoto distinto.
+    Section 16: events of M=5.6 at 10:00 and M=4.2 at
+    10:20; then one of M=6.1 arrives, which occurred at 09:55 (before the
+    other two, but was received later). The system must register it anyway,
+    because each identifier represents a different earthquake.
     """
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
@@ -174,14 +172,13 @@ def test_reporte_tardio_no_reordena_por_fecha_de_llegada():
     assert len(catalogo) == 3
 
 
-# ---------------- identificador eliminado (rechazo, sección 6) ----------------
-
+# ---------------- deleted identifier (rejection, Section 6) ----------------
 def test_reporte_a_identificador_eliminado_se_rechaza():
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
     catalogo.alta_evento(999, 5.0, 10.0, 500.0, 500.0,
                           datetime(2026, 9, 7, 9, 0, 0), "EST-01", zonas, RELOJ)
-    catalogo.eliminar_evento(999)  # simula una eliminación ya ocurrida
+    catalogo.eliminar_evento(999)  # simulates a deletion that already occurred
 
     reporte = _reporte(999, 5.0, revision=1, estacion="EST-01")
     resultado = catalogo.procesar_reporte(reporte, zonas, RELOJ)
@@ -190,8 +187,7 @@ def test_reporte_a_identificador_eliminado_se_rechaza():
     assert len(catalogo) == 0
 
 
-# ---------------- procesamiento por cola (paso a paso y continuo) ----------------
-
+# ---------------- queue processing (step-by-step and continuous) ----------------
 def test_procesar_siguiente_consume_un_reporte_a_la_vez():
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
@@ -208,18 +204,18 @@ def test_procesar_siguiente_consume_un_reporte_a_la_vez():
 
 def test_procesar_todos_resuelve_una_rafaga_completa():
     """
-    Ráfaga con alta, confirmación, reporte antiguo y corrección que
-    cambia la clave, tal como pide la sección 8.
+    Burst with new event, confirmation, old report, and correction that
+    changes the key, as required by Section 8.
     """
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
     fecha = datetime(2026, 9, 7, 9, 0, 0)
     cola = ColaReportes()
 
-    cola.encolar(_reporte(800, 4.0, revision=1, estacion="EST-01", fecha_hora=fecha))   # alta
-    cola.encolar(_reporte(800, 4.0, revision=1, estacion="EST-02", fecha_hora=fecha))   # confirmación
-    cola.encolar(_reporte(800, 4.0, revision=1, estacion="EST-03", fecha_hora=fecha))   # confirmación otra vez
-    cola.encolar(_reporte(800, 6.5, revision=2, estacion="EST-01", fecha_hora=fecha))   # corrección: cambia clave
+    cola.encolar(_reporte(800, 4.0, revision=1, estacion="EST-01", fecha_hora=fecha))   # new event
+    cola.encolar(_reporte(800, 4.0, revision=1, estacion="EST-02", fecha_hora=fecha))   # confirmation
+    cola.encolar(_reporte(800, 4.0, revision=1, estacion="EST-03", fecha_hora=fecha))   # confirmation again
+    cola.encolar(_reporte(800, 6.5, revision=2, estacion="EST-01", fecha_hora=fecha))   # correction: changes key
 
     resultados = procesar_todos(cola, catalogo, zonas, RELOJ)
 
@@ -237,38 +233,37 @@ def test_procesar_todos_resuelve_una_rafaga_completa():
     assert len(catalogo) == 1
 
 
-# ---------------- modo estrés y recuperación (sección 8 y caso de la sección 16) ----------------
-
+# ---------------- stress mode and recovery (Section 8 and case from Section 16) ----------------
 def test_modo_estres_permite_desbalance_y_recuperar_equilibrio_lo_corrige():
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
     cola = ColaReportes()
 
-    # 20 altas con la misma prioridad/magnitud e identificador ascendente:
-    # en modo normal el AVL las balancearía; en modo estrés no se rota,
-    # así que degenera en una cadena (diferencia de altura >> 2).
+    # 20 new events with the same priority/magnitude and ascending identifier:
+    # in normal mode the AVL would balance them; in stress mode there are no rotations,
+    # so it degenerates into a chain (height difference >> 2).
     for i in range(1, 21):
         cola.encolar(_reporte(1000 + i, 5.0, revision=1, estacion="EST-01"))
 
     procesar_todos(cola, catalogo, zonas, RELOJ, balancear=False)
 
     assert len(catalogo) == 20
-    assert catalogo.esta_balanceado() is False  # degenerado, como se espera en estrés
-    assert catalogo.avl.altura_total() == 19    # cadena pura: una rama por cada inserción
+    assert catalogo.esta_balanceado() is False  # degenerate, as expected in stress mode
+    assert catalogo.avl.altura_total() == 19    # pure chain: one branch per insertion
 
     balanceado = catalogo.recuperar_equilibrio()
 
     assert balanceado is True
     assert catalogo.esta_balanceado() is True
-    assert catalogo.avl.altura_total() < 6      # log2(20) ~ 4.3; muy por debajo de 19
+    assert catalogo.avl.altura_total() < 6      # log2(20) ~ 4.3; far below 19
 
-    # el orden y la cantidad de eventos se conservan
+    # the order and number of events are preserved
     claves = [e.clave for e in catalogo.avl.recorrido_inorden()]
     assert claves == sorted(claves)
     assert len(catalogo.avl) == 20
 
-    # el índice por identificador sigue siendo válido: las rotaciones no
-    # crean ni destruyen nodos, solo reordenan punteros
+    # the identifier index remains valid: rotations do not
+    # create or destroy nodes, they only rearrange pointers
     evento, visitados = catalogo.consultar_evento(1010)
     assert evento is not None
     assert evento.identificador == 1010
@@ -283,16 +278,16 @@ def test_recuperar_equilibrio_registra_rotaciones_de_recuperacion():
         cola.encolar(_reporte(2000 + i, 5.0, revision=1, estacion="EST-01"))
 
     procesar_todos(cola, catalogo, zonas, RELOJ, balancear=False)
-    assert catalogo.avl.contador_rotaciones_recuperacion == 0  # aún no se ha recuperado
+    assert catalogo.avl.contador_rotaciones_recuperacion == 0  # recovery has not yet been performed
 
     catalogo.recuperar_equilibrio()
 
-    assert catalogo.avl.contador_rotaciones_recuperacion > 0  # sí tuvo que rotar
+    assert catalogo.avl.contador_rotaciones_recuperacion > 0  # it did have to rotate
 
 
 def test_alta_manual_normal_no_se_ve_afectada_por_el_modo_estres():
-    """El modo estrés solo aplica al procesamiento de reportes por cola;
-    las altas manuales (sección 6) siguen balanceando normalmente."""
+    """Stress mode only applies to processing reports through the queue;
+    manual insertions (Section 6) continue to balance normally."""
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
     for i in range(1, 11):

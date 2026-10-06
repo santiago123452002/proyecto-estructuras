@@ -1,14 +1,14 @@
 class Nodo:
     """
-    Nodo genérico para árboles binarios de búsqueda (BST y AVL).
- 
-    Guarda el elemento COMPLETO (en fases posteriores será un objeto
-    Evento), no solo su clave. El elemento debe exponer una propiedad
-    `clave` comparable con <, >, == (en el proyecto, la tupla
-    K = (prioridad, magnitud, identificador)).
- 
-    `padre` es opcional pero muy útil para localizar eventos y para
-    construir la pila de deshacer más adelante.
+    Generic node for binary search trees (BST and AVL).
+
+    Stores the COMPLETE element (in later phases it will be an
+    Event object), not just its key. The element must expose a
+    `clave` property comparable with <, >, == (in the project, the tuple
+    K = (priority, magnitude, identifier)).
+
+    `padre` is optional but very useful for locating events and for
+    building the undo stack later.
     """
  
     def __init__(self, elemento):

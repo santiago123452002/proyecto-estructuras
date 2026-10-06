@@ -7,29 +7,27 @@ from .asociaciones import candidatos, elegir_referencia
 
 class Catalogo:
     """
-    Envuelve el ArbolAVL de la Fase 1 y resuelve lo que el árbol no
-    puede resolver solo: localizar un evento por identificador. El AVL
-    ordena por K = (P, M, I), así que buscar por I recorriendo el árbol
-    costaría O(n) en el peor caso.
+    Wraps the Phase 1 ArbolAVL and handles what the tree cannot resolve
+    on its own: locating an event by identifier. The AVL is ordered by
+    K = (P, M, I), so searching by I by traversing the tree would cost O(n)
+    in the worst case.
 
-    Estructura auxiliar elegida: diccionario identificador -> Nodo
-    activo del AVL.
-      - Costo por operación: O(1) promedio (hash de un entero).
-      - Costo de memoria: O(n) adicional, una entrada por evento activo.
-    Alternativa descartada: mantener una lista paralela ordenada por I
-    y reordenarla tras cada cambio — el propio enunciado la prohíbe como
-    mecanismo exclusivo de gestión (sección 2), y además cuesta O(n log n)
-    por reordenamiento en vez de O(1).
+    Auxiliary structure chosen: dictionary identifier -> active AVL Node.
+    - Operation cost: O(1) on average (hashing an integer).
+    - Memory cost: O(n) additional, one entry per active event.
+    Alternative discarded: maintaining a parallel list sorted by I and
+    reordering it after every change — the statement itself prohibits it
+    as the exclusive management mechanism (section 2), and it also costs
+    O(n log n) per reordering instead of O(1).
 
-    Además del AVL activo, se mantiene el histórico en memoria por ahora
-    (dos diccionarios id->Evento: archivados y eliminados). La
-    persistencia en JSON llega en la Fase 7; este diccionario es
-    exactamente lo que se va a serializar entonces.
+    In addition to the active AVL, the history is currently kept in memory
+    (two id->Event dictionaries: archived and deleted). JSON persistence
+    comes in Phase 7; this dictionary is exactly what will be serialized then.
 
-    Implementa: alta, consulta y corrección manual (sección 6);
-    procesamiento de reportes por cola con modo estrés (sección 6 y 8);
-    eliminación individual y archivo de subárboles (sección 10); y
-    asociaciones candidato/réplica entre eventos (sección 7).
+    Implements: event registration, querying, and manual correction (section 6);
+    report processing through a queue with stress mode (sections 6 and 8);
+    individual deletion and subtree archiving (section 10); and
+    candidate/aftershock associations between events (section 7).
     """
 
     def __init__(self):
@@ -39,17 +37,17 @@ class Catalogo:
         self._eliminados = {}       # id -> Evento (histórico, sección 10)
         self._asociaciones = {}     # id_b -> id_a (referencia elegida, sección 7)
 
-        # Parámetros configurables por el usuario (secciones 7, 9 y 10).
+        # Parameters configurable by the user (sections 7, 9, and 10).
         self.w_horas = 48.0
         self.r_km = 40.0
         self.t_horas = 72.0
         self.l_profundidad = 3
 
-        # Indicadores acumulados (sección 14). Se actualizan dentro de
-        # las propias operaciones (alta, corrección, procesamiento de
-        # reportes, archivo) según ocurren; deshacer una acción restaura
-        # también estos contadores, porque viven dentro de Catalogo y
-        # Catalogo entero se copia en cada snapshot de Escenario.
+        # Accumulated metrics (section 14). They are updated within
+        # the operations themselves (registration, correction, report
+        # processing, archiving) as they occur; undoing an action also restores
+        # these counters because they live inside Catalog and the entire
+        # Catalog is copied in each Escenario snapshot.
         self.metricas = {
             "correcciones_aceptadas": 0,
             "altas_nuevas": 0,
@@ -78,8 +76,8 @@ class Catalogo:
         return identificador in self._eliminados
 
     def identificador_en_uso(self, identificador):
-        """Un identificador no se reutiliza para otro terremoto (sección 3),
-        así esté archivado o eliminado, no solo activo."""
+        """An identifier is not reused for another earthquake (section 3),
+        whether it is archived or deleted, not just active."""
         return (self.esta_activo(identificador) or self.esta_archivado(identificador)
                 or self.esta_eliminado(identificador))
 
@@ -94,11 +92,12 @@ class Catalogo:
     def alta_evento(self, identificador, magnitud, profundidad, epicentro_x, epicentro_y,
                      fecha_hora, estacion_origen, zonas, reloj_simulacion):
         """
-        Si algún dato es inválido o el identificador ya existe (activo,
-        archivado o eliminado), no se modifica ninguna estructura y se
-        lanza ValidacionError con la causa. Si todo es válido, ejecuta
-        el alta como una sola acción: calcula P, construye K, inserta en
-        el AVL, marca el evento como pendiente y actualiza asociaciones.
+        If any data is invalid or the identifier already exists (active,
+        archived, or deleted), no structure is modified and a ValidacionError
+        is raised with the cause. If everything is valid, the registration is
+        executed as a single action: P is calculated, K is constructed, the
+        event is inserted into the AVL, the event is marked as pending, and
+        associations are updated.
         """
         if self.identificador_en_uso(identificador):
             raise ValidacionError(f"El identificador {identificador} ya está en uso.")
@@ -124,10 +123,10 @@ class Catalogo:
 
     def consultar_evento(self, identificador):
         """
-        Devuelve (evento, nodos_visitados). Si no está activo, evento es
-        None. `nodos_visitados` es el costo simulado de la sección 9: se
-        obtiene rebuscando por clave en el AVL (profundidad + 1), aunque
-        la localización real por identificador use el índice en O(1).
+        Returns (event, nodes_visited). If it is not active, event is
+        None. `nodes_visited` is the simulated cost from section 9: it is
+        obtained by searching again by key in the AVL (depth + 1), even though
+        the actual location by identifier uses the O(1) index.
         """
         nodo = self._indice_por_id.get(identificador)
         if nodo is None:
@@ -139,13 +138,13 @@ class Catalogo:
 
     def corregir_evento(self, identificador, zonas, reloj_simulacion, **cambios):
         """
-        `cambios` acepta cualquiera de: magnitud, profundidad,
-        epicentro_x, epicentro_y, fecha_hora. El identificador nunca
-        cambia. La revisión sube en 1 siempre que la corrección se
-        aplique, aunque la clave resultante sea igual a la anterior.
+        `cambios` accepts any of: magnitude, depth,
+        epicenter_x, epicenter_y, date_time. The identifier never
+        changes. The revision increases by 1 whenever the correction is
+        applied, even if the resulting key is the same as the previous one.
 
-        Se valida TODO el estado propuesto antes de tocar el árbol; si
-        algo falla, no se aplica ningún cambio parcial.
+        The ENTIRE proposed state is validated before modifying the tree; if
+        anything fails, no partial change is applied.
         """
         nodo = self._indice_por_id.get(identificador)
         if nodo is None:
@@ -190,7 +189,7 @@ class Catalogo:
     # ---------------- marcar como revisado (sección 6) ----------------
 
     def marcar_revisado(self, identificador):
-        """No modifica P, M ni I: la clave y la posición en el AVL no cambian."""
+        """Does not modify P, M, or I: the key and position in the AVL do not change."""
         nodo = self._indice_por_id.get(identificador)
         if nodo is None:
             raise ValidacionError(f"El identificador {identificador} no corresponde a un evento activo.")
@@ -201,15 +200,14 @@ class Catalogo:
 
     def eliminar_evento(self, identificador, balancear=True):
         """
-        Retira SOLO el evento seleccionado del AVL activo. Los demás
-        nodos permanecen activos, incluidos los que eran descendientes
-        de este en el árbol (el AVL es una estructura de almacenamiento;
-        no representa relaciones de dominio entre terremotos). Se
-        guardan sus datos en el histórico de eliminados, se actualizan
-        las asociaciones afectadas, y el identificador queda retirado:
-        no puede reutilizarse ni reactivarse por reporte (solo se
-        recupera deshaciendo la eliminación o restaurando una versión,
-        cuando exista ese módulo).
+        Removes ONLY the selected event from the active AVL. The other
+        nodes remain active, including those that were descendants of this
+        node in the tree (the AVL is a storage structure; it does not
+        represent domain relationships between earthquakes). Their data is
+        stored in the deleted history, affected associations are updated,
+        and the identifier is retired: it cannot be reused or reactivated
+        by a report (it can only be recovered by undoing the deletion or
+        restoring a version, when that module exists).
         """
         nodo = self._indice_por_id.get(identificador)
         if nodo is None:
@@ -229,24 +227,22 @@ class Catalogo:
 
     def archivar_rama_antigua(self, reloj_simulacion, balancear=True):
         """
-        "Archivar rama de eventos antiguos": evalúa TODOS los subárboles
-        del AVL activo. Un subárbol es elegible si TODOS sus eventos
-        tienen prioridad baja y antigüedad estrictamente mayor que
-        `self.t_horas` (antigüedad = reloj de simulación - hora de
-        ocurrencia). Entre las ramas elegibles se elige la de mayor
-        cantidad de nodos; empate -> mayor profundidad de la raíz;
-        empate -> mayor identificador de la raíz. Una hoja también
-        cuenta como subárbol; si todo el árbol es elegible, se archiva
-        completo.
+        "Archive branch of old events": evaluates ALL subtrees
+        of the active AVL. A subtree is eligible if ALL of its events
+        have low priority and an age strictly greater than
+        `self.t_horas` (age = simulation clock - occurrence time).
+        Among eligible branches, the one with the largest
+        number of nodes is selected; tie -> greatest root depth;
+        tie -> greatest root identifier. A leaf also counts as a subtree;
+        if the entire tree is eligible, it is archived completely.
 
-        El conjunto de identificadores afectados se fija ANTES de tocar
-        el árbol (se lee la topología existente al iniciar la
-        operación), así que las rotaciones que ocurran mientras se
-        retiran uno por uno no pueden añadir ni excluir eventos de ese
-        conjunto.
+        The set of affected identifiers is determined BEFORE modifying
+        the tree (the existing topology is read when the operation starts),
+        so rotations that occur while removing nodes one by one cannot add
+        or exclude events from that set.
 
-        Devuelve la lista de identificadores archivados, o [] si no
-        existe ninguna rama elegible (en ese caso no se modifica nada).
+        Returns the list of archived identifiers, or [] if there is no
+        eligible branch (in that case, nothing is modified).
         """
         def es_elegible(evento):
             antiguedad_horas = (reloj_simulacion - evento.fecha_hora).total_seconds() / 3600.0
@@ -269,21 +265,21 @@ class Catalogo:
             del self._indice_por_id[evento.identificador]
             self._archivados[evento.identificador] = evento
 
-        # NO se llama a _recalcular_todas_las_asociaciones() ni se toca
-        # self._asociaciones aquí: la sección 7 es explícita ("un simple
-        # archivo no cambia esas relaciones"). Un evento archivado sigue
-        # contando como "disponible" para ser candidato/referencia de
-        # otros (ver _eventos_disponibles_para_asociacion), y el
-        # histórico conserva sus asociaciones para consulta (sección 10)
-        # -- así que archivar no tiene nada que recalcular ni que borrar.
+        # DO NOT call _recalcular_todas_las_asociaciones() or modify
+        # self._asociaciones here: section 7 is explicit ("simple
+        # archiving does not change those relationships"). An archived event
+        # still counts as "available" to be a candidate/reference for
+        # other events (see _eventos_disponibles_para_asociacion), and the
+        # history preserves its associations for querying (section 10)
+        # -- so archiving has nothing to recalculate or delete.
         self.metricas["archivos_masivos"] += 1
         self.metricas["eventos_archivados_total"] += len(identificadores_afectados)
         return identificadores_afectados
 
     @staticmethod
     def _eventos_del_subarbol(nodo):
-        """Lista de eventos de un subárbol del AVL, leída de una sola
-        vez (antes de modificar nada), tal como exige la sección 10."""
+        """List of events from an AVL subtree, read only once
+        (before modifying anything), as required by section 10."""
         resultado = []
 
         def recorrer(actual):
@@ -299,19 +295,19 @@ class Catalogo:
 
     def procesar_reporte(self, reporte, zonas, reloj_simulacion, balancear=True):
         """
-        Aplica la tabla de decisión de la sección 6 a un Reporte recibido
-        de la cola. Devuelve un ResultadoReporte; nunca lanza una
-        excepción por datos de negocio inválidos (eso se traduce en un
-        resultado RECHAZADO_INVALIDO), para que el procesamiento de la
-        cola nunca se detenga a mitad de una ráfaga.
+        Applies the decision table from section 6 to a Report received
+        from the queue. Returns a ResultadoReporte; it never raises an
+        exception for invalid business data (this is translated into a
+        RECHAZADO_INVALIDO result), so queue processing never stops
+        halfway through a burst.
 
-        `balancear=False` es el modo estrés (sección 8): las altas y
-        actualizaciones se hacen conservando el orden BST, sin rotar.
+        `balancear=False` is stress mode (section 8): registrations and
+        updates preserve BST ordering without rotations.
         """
         identificador = reporte.identificador
 
-        # Un identificador eliminado se conserva como retirado: sus
-        # reportes posteriores se rechazan hasta deshacer la eliminación.
+        # A deleted identifier remains retired: its subsequent
+        # reports are rejected until the deletion is undone.
         if self.esta_eliminado(identificador):
             return ResultadoReporte(
                 TipoResultadoReporte.RECHAZADO_ELIMINADO,
@@ -320,18 +316,18 @@ class Catalogo:
 
         nodo = self._indice_por_id.get(identificador)
 
-        # Identificador desconocido (ni activo ni archivado): alta nueva.
-        # La primera revisión recibida puede ser mayor que 1.
+        # Unknown identifier (neither active nor archived): new registration.
+        # The first received revision may be greater than 1.
         if nodo is None and not self.esta_archivado(identificador):
             return self._alta_por_reporte(reporte, zonas, reloj_simulacion, balancear)
 
-        # Archivado: una revisión mayor y válida lo reactiva como
-        # pendiente; una confirmación o un reporte antiguo NO lo reactiva.
+        # Archived: a higher and valid revision reactivates it as
+        # pending; a confirmation or an old report does NOT reactivate it.
         if nodo is None and self.esta_archivado(identificador):
             return self._procesar_reporte_para_archivado(reporte, identificador, zonas,
                                                            reloj_simulacion, balancear)
 
-        # Identificador activo: comparar revisiones.
+        # Active identifier: compare revisions.
         evento_actual = nodo.elemento
 
         if reporte.revision < evento_actual.revision:
@@ -492,8 +488,8 @@ class Catalogo:
     # ---------------- asociaciones candidato/réplica (sección 7) ----------------
 
     def configurar_asociaciones(self, w_horas=None, r_km=None):
-        """Cambia W y/o R (ambos deben ser positivos) y recalcula TODAS
-        las asociaciones, como exige la sección 7."""
+        """Changes W and/or R (both must be positive) and recalculates ALL
+        associations, as required by section 7."""
         if w_horas is not None:
             if w_horas <= 0:
                 raise ValidacionError("W debe ser un valor positivo.")
@@ -505,28 +501,27 @@ class Catalogo:
         self._recalcular_todas_las_asociaciones()
 
     def configurar_t_horas(self, t_horas):
-        """Cambia T (debe ser positivo), usado por archivar_rama_antigua."""
+        """Changes T (must be positive), used by archivar_rama_antigua."""
         if t_horas <= 0:
             raise ValidacionError("T debe ser un valor positivo.")
         self.t_horas = t_horas
 
     def _eventos_disponibles_para_asociacion(self):
-        """Activos + archivados; nunca eliminados (sección 7)."""
+        """Active + archived; never deleted (section 7)."""
         return [nodo.elemento for nodo in self._indice_por_id.values()] + list(self._archivados.values())
 
     def _recalcular_todas_las_asociaciones(self):
         """
-        Recalcula la asociación candidato/réplica de TODOS los eventos
-        activos y archivados. Se recalculan todos porque un cambio en
-        cualquier evento (o en W/R) puede alterar el conjunto de
-        candidatos de cualquier otro evento posterior en el tiempo.
+        Recalculates the candidate/aftershock association for ALL
+        active and archived events. All are recalculated because a change in
+        any event (or in W/R) can alter the set of candidates for any other
+        event occurring later in time.
 
-        Costo: O(n^2) en el peor caso (por cada evento se recorren todos
-        los demás). Aceptable para el tamaño de escenario de este
-        proyecto; una optimización futura razonable sería recalcular
-        solo los eventos ocurridos después del que cambió, dentro de la
-        ventana W (los únicos cuyo conjunto de candidatos puede verse
-        afectado).
+        Cost: O(n^2) in the worst case (for each event, all
+        other events are traversed). Acceptable for the scenario size of this
+        project; a reasonable future optimization would be to recalculate
+        only the events that occurred after the changed event, within the
+        W window (the only ones whose candidate set can be affected).
         """
         disponibles = self._eventos_disponibles_para_asociacion()
         nuevas_asociaciones = {}
@@ -538,8 +533,8 @@ class Catalogo:
         self._asociaciones = nuevas_asociaciones
 
     def candidatos_de(self, identificador):
-        """Lista de eventos candidatos a referencia de `identificador`
-        (activo o archivado)."""
+        """List of events that are candidates to be the reference for `identifier`
+        (active or archived)."""
         evento = self._evento_activo_o_archivado(identificador)
         if evento is None:
             raise ValidacionError(
@@ -549,55 +544,54 @@ class Catalogo:
         return candidatos(evento, disponibles, self.w_horas, self.r_km)
 
     def referencia_de(self, identificador):
-        """Identificador del evento elegido como referencia/réplica de
-        `identificador`, o None si no tiene ninguna asociación."""
+        """Identifier of the event chosen as the reference/aftershock for
+        `identifier`, or None if it has no association."""
         return self._asociaciones.get(identificador)
 
     def eventos_que_referencian(self, identificador):
-        """Identificadores de los eventos que usan a `identificador`
-        como su referencia."""
+        """Identifiers of the events that use `identifier`
+        as their reference."""
         return [id_b for id_b, id_a in self._asociaciones.items() if id_a == identificador]
 
-    # ---------------- modo estrés: recuperación global (sección 8) ----------------
-
+    # ---------------- stress mode: global recovery (section 8) ----------------
     def esta_balanceado(self):
         return self.avl.esta_balanceado()
 
     def recuperar_equilibrio(self):
         """
-        Restaura la propiedad AVL en todo el catálogo tras una ráfaga en
-        modo estrés. Las rotaciones no crean ni destruyen nodos, así que
-        el índice identificador->nodo sigue siendo válido sin tocarlo.
-        Devuelve True si el árbol quedó balanceado.
+        Restores the AVL property throughout the entire catalog after a burst
+        in stress mode. Rotations do not create or destroy nodes, so the
+        identifier->node index remains valid without modifying it.
+        Returns True if the tree is balanced.
         """
         return self.avl.recuperar_equilibrio()
 
     # ---------------- consultas (sección 11) ----------------
 
     def configurar_l_profundidad(self, l_profundidad):
-        """L (sección 9): límite de profundidad para marcar acceso
-        costoso. Debe ser un entero no negativo."""
+        """L (section 9): depth limit for marking costly access.
+        Must be a non-negative integer."""
         if not isinstance(l_profundidad, int) or l_profundidad < 0:
             raise ValidacionError("L debe ser un entero no negativo.")
         self.l_profundidad = l_profundidad
 
     def pendientes_top_k(self, k):
         """
-        Consulta 1: los primeros k eventos ACTIVOS pendientes de
-        atención, en orden DESCENDENTE de K. Si hay menos de k
-        pendientes, devuelve todos los disponibles.
+        Query 1: the first k ACTIVE events pending
+        attention, in DESCENDING order of K. If there are fewer than k
+        pending events, all available events are returned.
 
-        Costo: recorrido inverso (derecho, nodo, izquierdo) del AVL --
-        visita las claves de mayor a menor, exactamente el orden que se
-        pide -- y se DETIENE apenas junta k pendientes. Esa poda es
-        segura porque cualquier nodo que quede sin visitar tiene una
-        clave menor que todos los ya vistos (por la propiedad BST), así
-        que nunca podría desplazar a ninguno de los k ya encontrados.
-        En el peor caso (los últimos k nodos en orden descendente
-        resultan ser los únicos pendientes) se recorre el árbol
-        completo, O(n).
+        Cost: reverse traversal (right, node, left) of the AVL -- visits
+        keys from highest to lowest, exactly the requested order -- and
+        STOPS as soon as k pending events have been collected. This pruning
+        is safe because any unvisited node has a key smaller than all
+        already visited nodes (due to the BST property), so it could never
+        displace any of the k events already found.
+        In the worst case (the last k nodes in descending order
+        are the only pending ones), the entire tree is traversed,
+        O(n).
 
-        Devuelve (lista_de_eventos, nodos_visitados).
+        Returns (list_of_events, nodes_visited).
         """
         if not isinstance(k, int) or k <= 0:
             raise ValidacionError("k debe ser un entero positivo.")
@@ -624,17 +618,17 @@ class Catalogo:
     def buscar_por_filtros(self, magnitud_min=None, magnitud_max=None, profundidad_max=None,
                             fecha_inicio=None, fecha_fin=None):
         """
-        Consulta 2: eventos ACTIVOS con magnitud dentro de un intervalo
-        inclusivo, profundidad del hipocentro menor o igual a un límite,
-        y fecha de ocurrencia dentro de un intervalo inclusivo. Todos
-        los filtros son opcionales (None = sin restricción en ese campo).
+        Query 2: ACTIVE events with magnitude within an inclusive interval,
+        hypocenter depth less than or equal to a limit,
+        and occurrence date within an inclusive interval. All
+        filters are optional (None = no restriction on that field).
 
-        Costo: la clave K del AVL ordena por (prioridad, magnitud, id),
-        no por profundidad ni por fecha, así que ningún filtro de esta
-        consulta coincide con el orden del árbol -- no hay forma de
-        podar ramas con seguridad. Se recorre el árbol completo, O(n).
+        Cost: the AVL key K is ordered by (priority, magnitude, id),
+        not by depth or date, so none of the filters in this
+        query match the tree ordering -- there is no safe way to
+        prune branches. The entire tree is traversed, O(n).
 
-        Devuelve (lista_de_eventos, nodos_visitados).
+        Returns (list_of_events, nodes_visited).
         """
         resultado = []
         visitados = [0]
@@ -666,11 +660,11 @@ class Catalogo:
 
     def consultar_asociaciones(self, identificador):
         """
-        Consulta 3: candidatos y referencia elegida para un evento, y
-        los eventos que lo usan a ÉL como referencia. A diferencia de
-        las demás consultas, ESTA sí considera el histórico (archivados,
-        no eliminados) — así lo exige la sección 11 explícitamente.
-        Cada resultado indica si está activo o archivado.
+        Query 3: candidates and selected reference for an event, and
+        the events that use IT as their reference. Unlike
+        the other queries, THIS one also considers the history (archived,
+        not deleted) — this is explicitly required by section 11.
+        Each result indicates whether it is active or archived.
         """
         if not (self.esta_activo(identificador) or self.esta_archivado(identificador)):
             raise ValidacionError(
@@ -694,17 +688,17 @@ class Catalogo:
 
     def eventos_prioridad_alta_con_acceso_costoso(self):
         """
-        Consulta 4: eventos ACTIVOS de prioridad alta cuya profundidad
-        en el árbol es estrictamente mayor que L (sección 9). Para cada
-        uno se indica profundidad, el límite L vigente, y los nodos
-        visitados en su búsqueda por clave (profundidad + 1).
+        Query 4: ACTIVE events with high priority whose depth
+        in the tree is strictly greater than L (section 9). For each
+        one, its depth, the current L limit, and the nodes
+        visited in its key search (depth + 1) are provided.
 
-        Costo: O(n) para recorrer los eventos activos, más O(profundidad)
-        por cada uno de prioridad alta para ubicarlo -- en el peor caso
-        (árbol degradado en modo estrés) esto es O(n^2); en un AVL
-        balanceado normal es O(n log n).
+        Cost: O(n) to traverse the active events, plus O(depth)
+        for each high-priority event to locate it -- in the worst case
+        (a tree degraded in stress mode) this is O(n^2); in a normally
+        balanced AVL it is O(n log n).
 
-        Devuelve (lista_de_dicts, total_nodos_visitados).
+        Returns (list_of_dicts, total_nodes_visited).
         """
         resultado = []
         total_visitados = 0
@@ -724,26 +718,26 @@ class Catalogo:
                 })
         return resultado, total_visitados
 
-    # ---------------- auditoría: "Verificar estructura" (sección 14) ----------------
+    # ---------------- audit: "Verify structure" (section 14) ----------------
 
     def verificar_estructura(self, modo="normal"):
         """
-        Comprueba, para TODO el árbol (no solo el hijo inmediato de cada
-        nodo): el orden global BST por K, unicidad de identificadores,
-        que las referencias sean consistentes (punteros padre/hijo, y
-        que las asociaciones candidato/réplica apunten a eventos que
-        realmente existen y no se referencien a sí mismos), y que las
-        alturas y factores de balance coincidan con los recalculados
-        desde la estructura real.
+        Checks, for the ENTIRE tree (not just the immediate child of each
+        node): global BST ordering by K, identifier uniqueness,
+        that references are consistent (parent/child pointers, and
+        candidate/aftershock associations point to events that
+        actually exist and do not reference themselves), and that
+        heights and balance factors match those recalculated
+        from the actual structure.
 
-        En modo normal, un factor de balance fuera de {-1, 0, 1} es un
-        ERROR. En modo estrés se reporta aparte como "desbalance
-        esperado" (no es un error en sí mismo, ya que el modo estrés
-        aplaza el balanceo a propósito) -- pero los errores de orden BST
-        o de metadatos (alturas, padres, identificadores, asociaciones)
-        siguen siendo errores en cualquier modo.
+        In normal mode, a balance factor outside {-1, 0, 1} is an
+        ERROR. In stress mode, it is reported separately as an "expected
+        imbalance" (it is not an error by itself, since stress mode
+        intentionally postpones balancing) -- but BST ordering errors
+        or metadata errors (heights, parents, identifiers, associations)
+        remain errors in any mode.
 
-        Devuelve {"ok": bool, "errores": [...], "desbalances_esperados": [...]}.
+        Returns {"ok": bool, "errores": [...], "desbalances_esperados": [...]}.
         """
         errores = []
         desbalances_esperados = []

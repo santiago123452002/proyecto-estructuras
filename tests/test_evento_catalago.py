@@ -1,7 +1,7 @@
 """
-Pruebas de la Fase 2 + 3: Evento, prioridad, zona, y las operaciones de
-alta / consulta / corrección sobre el Catalogo (que envuelve el ArbolAVL
-de la Fase 1 más el índice por identificador).
+Phase 2 + 3 tests: Event, priority, zone, and the event
+creation / query / correction operations on the Catalog (which wraps the
+Phase 1 AVLTree plus the identifier index).
 """
 
 import sys
@@ -25,14 +25,14 @@ def _zonas_ejemplo():
     ]
 
 
-# ---------------- prioridad (sección 4) ----------------
+# ---------------- priority (Section 4) ----------------
 
 def test_prioridad_alta_por_magnitud():
     assert calcular_prioridad(6.0, 500.0, en_zona_poblada=False) == 3
 
 
 def test_prioridad_alta_por_limite_exacto_en_zona_poblada():
-    # M = 4.5, H = 30.0, zona poblada -> prioridad 3 (límites inclusivos, ejemplo del enunciado)
+    # M = 4.5, H = 30.0, populated zone -> priority 3 (inclusive boundaries, example from the statement)
     assert calcular_prioridad(4.5, 30.0, en_zona_poblada=True) == 3
 
 
@@ -44,7 +44,7 @@ def test_prioridad_baja():
     assert calcular_prioridad(3.0, 500.0, en_zona_poblada=False) == 1
 
 
-# ---------------- zona (borde inclusivo) ----------------
+# ---------------- zone (inclusive boundary) ----------------
 
 def test_zona_contiene_borde():
     zona = Zona("Z", 0.0, 100.0, 0.0, 100.0, poblada=True)
@@ -52,7 +52,7 @@ def test_zona_contiene_borde():
     assert zona.contiene(100.1, 50.0) is False
 
 
-# ---------------- validación de Evento ----------------
+#---------------- Event validation ----------------
 
 def test_evento_rechaza_magnitud_fuera_de_rango():
     with pytest.raises(ValidacionError):
@@ -64,7 +64,7 @@ def test_evento_rechaza_mas_de_un_decimal():
         Evento(1, 5.55, 10.0, 500.0, 500.0, datetime(2026, 9, 7), "EST-01")
 
 
-# ---------------- alta de evento ----------------
+# ---------------- event creation ----------------
 
 def test_alta_evento_calcula_prioridad_y_clave():
     catalogo = Catalogo()
@@ -99,8 +99,7 @@ def test_alta_rechaza_fecha_posterior_al_reloj():
     assert len(catalogo) == 0
 
 
-# ---------------- consulta ----------------
-
+# ---------------- query ----------------
 def test_consultar_evento_existente_reporta_nodos_visitados():
     catalogo = Catalogo()
     catalogo.alta_evento(20, 5.0, 10.0, 500.0, 500.0,
@@ -118,12 +117,11 @@ def test_consultar_evento_inexistente():
     assert visitados == 0
 
 
-# ---------------- corrección (caso obligatorio de la sección 16) ----------------
-
+# ---------------- correction (mandatory case from Section 16) ----------------
 def test_correccion_cambia_prioridad_de_2_a_3_y_sube_revision():
     """
-    Caso mínimo obligatorio (sección 16): corregir un evento de M=4.8,
-    H=70.0 a M=6.2, H=15.0. La prioridad debe pasar de 2 a 3.
+    Mandatory minimum case (Section 16): correct an event from M=4.8,
+    H=70.0 to M=6.2, H=15.0. The priority must change from 2 to 3.
     """
     catalogo = Catalogo()
     zonas = _zonas_ejemplo()
@@ -164,8 +162,7 @@ def test_correccion_sobre_identificador_inexistente():
         catalogo.corregir_evento(999, _zonas_ejemplo(), RELOJ, magnitud=5.0)
 
 
-# ---------------- marcar revisado ----------------
-
+# ---------------- mark as reviewed ----------------
 def test_marcar_revisado_no_cambia_clave():
     catalogo = Catalogo()
     catalogo.alta_evento(50, 5.0, 10.0, 500.0, 500.0,

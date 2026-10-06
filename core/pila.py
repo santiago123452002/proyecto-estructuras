@@ -8,14 +8,14 @@ class _NodoPila:
 
 class Pila:
     """
-    Pila LIFO (sección 2 y 13) implementada explícitamente con una lista
-    enlazada simple propia — NO se usa collections.deque ni el
-    list.append/pop de Python, aunque tendrían el mismo costo asintótico.
+    LIFO stack (sections 2 and 13) explicitly implemented with a custom
+    singly linked list — collections.deque and Python's list.append/pop
+    are NOT used, even though they would have the same asymptotic cost.
 
-    Apilar y desapilar son O(1): ambas operaciones solo tocan la cima,
-    nunca recorren la pila. Costo de memoria: O(n), un nodo enlazado por
-    elemento apilado (en Escenario, cada elemento es una copia completa
-    del estado operativo — ver Escenario._capturar_estado).
+    Push and pop are O(1): both operations only access the top,
+    and never traverse the stack. Memory cost: O(n), one linked node per
+    pushed element (in Escenario, each element is a complete copy
+    of the operational state — see Escenario._capturar_estado).
     """
 
     def __init__(self):
@@ -29,13 +29,13 @@ class Pila:
         return self._cima is None
 
     def apilar(self, valor):
-        """Agrega `valor` a la cima. Costo: O(1)."""
+        """Adds `valor` to the top. Cost: O(1)."""
         self._cima = _NodoPila(valor, self._cima)
         self._cantidad += 1
 
     def desapilar(self):
-        """Retira y devuelve el valor en la cima. Costo: O(1).
-        Lanza IndexError si la pila está vacía."""
+        """Removes and returns the value at the top. Cost: O(1).
+        Raises IndexError if the stack is empty."""
         if self._cima is None:
             raise IndexError("No se puede desapilar: la pila está vacía.")
         nodo = self._cima
@@ -44,7 +44,7 @@ class Pila:
         return nodo.valor
 
     def ver_cima(self):
-        """Consulta el valor en la cima sin retirarlo. Costo: O(1)."""
+        """Returns the value at the top without removing it. Cost: O(1)."""
         if self._cima is None:
             raise IndexError("No se puede consultar: la pila está vacía.")
         return self._cima.valor

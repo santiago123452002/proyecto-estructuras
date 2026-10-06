@@ -5,12 +5,12 @@ from .dibujo_arbol import dibujar_en_escena
 
 class PanelComparacionBST(QtWidgets.QWidget):
     """
-    Comparative AVL vs BST view (Section 15). The displayed BST is the one
-    from the latest "load by insertions" operation (Section 12, Persistence
-    tab) — both trees were built using the SAME sequence and the SAME
-    comparator, which is what makes the comparison valid. The AVL tree being
-    displayed is the current active catalog (which may have changed since
-    that load if additional operations were performed).
+    Comparative view AVL vs BST (section 15). The displayed BST is
+    the one from the last "load by insertions" (section 12, Persistence
+    tab) -- both trees were built using the SAME sequence and the SAME
+    comparator, which is exactly what makes the comparison valid. The
+    AVL being drawn is the current active catalog (which may have
+    changed since that load if you performed more operations).
     """
 
     def __init__(self, escenario, panel_persistencia, parent=None):

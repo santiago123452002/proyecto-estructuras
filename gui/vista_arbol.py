@@ -12,7 +12,7 @@ COLOR_PRIORIDAD = {
 
 
 class _NodoGrafico(QtWidgets.QGraphicsEllipseItem):
-    """Círculo clicable que representa un nodo del AVL en la escena."""
+    """Clickable circle representing an AVL node in the scene."""
 
     def __init__(self, identificador, x, y, radio, color, acceso_costoso, al_hacer_clic):
         super().__init__(-radio, -radio, radio * 2, radio * 2)
@@ -23,9 +23,9 @@ class _NodoGrafico(QtWidgets.QGraphicsEllipseItem):
 
         pluma = QtGui.QPen(QtGui.QColor("#222222"), 2)
         if acceso_costoso:
-            # Marca de "acceso costoso" (sección 9): un rasgo visual
-            # DISTINTO del color (que ya codifica la prioridad), para no
-            # confundir ambas señales -- borde punteado, negro y más grueso.
+            # Marks a "costly access" (Section 9): a visual feature DISTINCT from
+            # the color (which already encodes priority), so both signals are not
+            # confused — dashed, black, and thicker border.
             pluma.setStyle(QtCore.Qt.DashLine)
             pluma.setColor(QtGui.QColor("#000000"))
             pluma.setWidth(3)
@@ -44,15 +44,15 @@ class _NodoGrafico(QtWidgets.QGraphicsEllipseItem):
 
 class VistaArbolAVL(QtWidgets.QWidget):
     """
-    Dibuja el AVL activo tal como está en este momento: la posición
-    horizontal de cada nodo sigue el recorrido inorden (coincide con el
-    orden ascendente de K), y la vertical es su profundidad real —
-    así la imagen muestra la topología real, no un layout "bonito"
-    inventado.
+    Draws the active AVL tree exactly as it currently exists: the horizontal
+    position of each node follows the in-order traversal (matching the
+    ascending order of K), while the vertical position represents its actual
+    depth. This way, the image shows the real topology rather than an
+    invented "pretty" layout.
 
-    El COLOR codifica la prioridad; un borde punteado y más grueso marca
-    el "acceso costoso" de la sección 9. Son dos señales visuales
-    distintas a propósito, tal como exige el enunciado.
+    The COLOR represents the priority; a thicker dashed border marks the
+    "costly access" from Section 9. These are intentionally two different
+    visual signals, as required by the specification.
     """
 
     nodo_seleccionado = QtCore.Signal(int)

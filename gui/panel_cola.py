@@ -7,12 +7,11 @@ from core import Reporte, ValidacionError
 
 class PanelCola(QtWidgets.QWidget):
     """
-    Cola de reportes pendientes (sección 8): encolar ráfagas, y
-    procesar un reporte por paso o de forma continua CON PAUSA entre
-    pasos (con un QTimer, para que se vea avanzar de verdad, no solo
-    "procesar todo de golpe"). El modo (normal/estrés) se controla
-    desde la barra superior de la ventana principal; aquí solo se lee
-    `escenario.modo` para mostrarlo.
+    Pending report queue (Section 8): enqueue batches of reports and process
+    one report per step or continuously WITH A PAUSE between steps (using a
+    QTimer, so the progress can actually be seen instead of processing
+    everything at once). The mode (normal/stress) is controlled from the
+    top bar of the main window; here, `escenario.modo` is only read to display it.
     """
 
     cambio_realizado = QtCore.Signal()
@@ -29,7 +28,7 @@ class PanelCola(QtWidgets.QWidget):
 
         layout_principal = QtWidgets.QHBoxLayout(self)
 
-        # ---------------- columna izquierda: formulario + procesamiento ----------------
+        # ---------------- left column: form + processing ----------------
         columna_izquierda = QtWidgets.QVBoxLayout()
 
         grupo_formulario = QtWidgets.QGroupBox("Encolar reporte")
@@ -106,7 +105,7 @@ class PanelCola(QtWidgets.QWidget):
         columna_izquierda.addWidget(grupo_procesar)
         layout_principal.addLayout(columna_izquierda, stretch=1)
 
-        # ---------------- columna derecha: cola en orden de recepción ----------------
+        # ---------------- right column: queue in reception order ----------------
         columna_derecha = QtWidgets.QVBoxLayout()
         columna_derecha.addWidget(QtWidgets.QLabel("Cola de reportes pendientes (orden de recepción, FIFO)"))
 
@@ -122,7 +121,7 @@ class PanelCola(QtWidgets.QWidget):
 
         self.refrescar()
 
-    # ---------------- refresco ----------------
+    # ---------------- refresh ----------------
 
     def refrescar(self):
         self.etiqueta_modo.setText(
@@ -142,8 +141,7 @@ class PanelCola(QtWidgets.QWidget):
             for columna, valor in enumerate(valores):
                 self.tabla.setItem(fila, columna, QtWidgets.QTableWidgetItem(str(valor)))
 
-    # ---------------- encolar ----------------
-
+    # ---------------- enqueue ----------------
     def _fecha_hora_del_formulario(self):
         qdt = self.campo_fecha.dateTime()
         return datetime(qdt.date().year(), qdt.date().month(), qdt.date().day(),
@@ -162,7 +160,7 @@ class PanelCola(QtWidgets.QWidget):
         self.escenario.cola.encolar(reporte)
         self.refrescar()
 
-    # ---------------- procesar un paso ----------------
+    # ---------------- process one step ----------------
 
     def _describir_resultado(self, reporte, resultado, rotaciones_producidas):
         texto = (
@@ -175,9 +173,11 @@ class PanelCola(QtWidgets.QWidget):
         return texto
 
     def _procesar_un_paso(self):
-        """Procesa EXACTAMENTE un reporte (sección 8: 'los reportes de
-        cada paso se resuelven completamente antes del siguiente').
-        Devuelve True si procesó algo, False si la cola ya estaba vacía."""
+        """
+        Processes EXACTLY one report (Section 8: "reports from each step are
+        fully resolved before the next one"). Returns True if a report was
+        processed, False if the queue was already empty.
+        """
         if self.escenario.cola.esta_vacia():
             QtWidgets.QMessageBox.information(self, "Cola vacía", "No hay reportes pendientes por procesar.")
             return False
@@ -196,7 +196,7 @@ class PanelCola(QtWidgets.QWidget):
         self.cambio_realizado.emit()
         return True
 
-    # ---------------- procesamiento continuo con pausa ----------------
+    # ---------------- continuous processing with pause ----------------
 
     def _alternar_procesamiento_continuo(self):
         if self._temporizador.isActive():
@@ -217,9 +217,11 @@ class PanelCola(QtWidgets.QWidget):
         self.boton_procesar_uno.setEnabled(True)
 
     def _paso_continuo(self):
-        """Se llama cada INTERVALO_PAUSA_MS mientras el temporizador esté
-        activo -- así 'procesar todos' se ve avanzar de verdad, con
-        pausa entre pasos, en vez de resolverse todo de un golpe."""
+        """
+        Called every INTERVAL_PAUSA_MS while the timer is active — this makes
+        "process all" visibly progress, with a pause between steps, instead of
+        processing everything at once.
+        """
         if self.escenario.cola.esta_vacia():
             self._detener_procesamiento_continuo()
             return
